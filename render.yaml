@@ -3,6 +3,7 @@ services:
   - type: web
     name: ai-sparkx-api
     env: node
+    plan: free
     buildCommand: npm install
     startCommand: npm run server
     envVars:
