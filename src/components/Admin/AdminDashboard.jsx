@@ -276,7 +276,6 @@ const AdminDashboard = () => {
             <button className="btn-primary" onClick={handleFileUpload}>Import Excel</button>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
             <button className="btn-secondary" style={{flex: 1}} onClick={seedData}>Seed Mock Data</button>
             <button className="btn-danger" style={{flex: 1}} onClick={purgeData}>Purge All</button>
           </div>
