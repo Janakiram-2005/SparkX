@@ -1,0 +1,159 @@
+/* ScrambleText doesn't actually need complex CSS, just basic typography styles that we put inline in LandingPage.jsx! */
+/* We don't even need the GSAP challenge CSS anymore because ScrambleTextPlugin swaps characters, it doesn't need `.sliced-container` */
+
+/* Let's restore the timeline-grid CSS here */
+.timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  position: relative;
+  margin-top: 0;
+}
+
+@media (max-width: 900px) {
+  .timeline-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.watermark-bg {
+  position: fixed;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80%;
+  opacity: 0.05;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Ensure header nav matches global style */
+header nav {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+header nav a {
+  color: var(--text-muted);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  transition: color var(--transition-fast);
+}
+
+header nav a:hover {
+  color: var(--purple-neon);
+}
+
+/* --- 3D CUBE STYLES --- */
+.cube-scene {
+  width: 220px;
+  height: 220px;
+  perspective: 600px;
+}
+
+.cube-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  /* Adjusting their animation to loop so they can see it working */
+  animation: flip-horizontal-bck 3s cubic-bezier(0.455, 0.030, 0.515, 0.955) infinite alternate;
+}
+
+.cube-face {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: 1.8rem;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
+  border: 2px solid rgba(168, 85, 247, 0.5);
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: inset 0 0 40px rgba(168, 85, 247, 0.2);
+}
+
+.face-front  { transform: rotateY(0deg) translateZ(110px); }
+.face-top    { transform: rotateX(90deg) translateZ(110px); }
+.face-back   { transform: rotateX(180deg) translateZ(110px); }
+.face-bottom { transform: rotateX(-90deg) translateZ(110px); }
+
+/* User's Animista Code */
+@-webkit-keyframes flip-horizontal-bck {
+  0% {
+    -webkit-transform: translateZ(0) rotateX(0);
+            transform: translateZ(0) rotateX(0);
+  }
+  100% {
+    -webkit-transform: translateZ(-260px) rotateX(180deg);
+            transform: translateZ(-260px) rotateX(180deg);
+  }
+}
+@keyframes flip-horizontal-bck {
+  0% {
+    -webkit-transform: translateZ(0) rotateX(0);
+            transform: translateZ(0) rotateX(0);
+  }
+  100% {
+    -webkit-transform: translateZ(-260px) rotateX(180deg);
+            transform: translateZ(-260px) rotateX(180deg);
+  }
+}
+.flip-horizontal-bck {
+	-webkit-animation: flip-horizontal-bck 0.4s cubic-bezier(0.455, 0.030, 0.515, 0.955) both;
+	        animation: flip-horizontal-bck 0.4s cubic-bezier(0.455, 0.030, 0.515, 0.955) both;
+}
+
+/* --- 3D CUBE STYLES --- */
+.scene {
+  width: 220px;
+  height: 220px;
+  perspective: 600px;
+}
+
+.cube {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transform: translateZ(-110px);
+}
+
+.cube__face {
+  position: absolute;
+  width: 220px;
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 900;
+  font-size: 1.8rem;
+  color: #fff;
+  text-align: center;
+  text-shadow: 0 0 20px rgba(168, 85, 247, 0.8);
+  border: 2px solid rgba(168, 85, 247, 0.5);
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  box-shadow: inset 0 0 40px rgba(168, 85, 247, 0.2);
+}
+
+.cube__face--front  { transform: rotateY(  0deg) translateZ(110px); }
+.cube__face--right  { transform: rotateY( 90deg) translateZ(110px); }
+.cube__face--back   { transform: rotateY(180deg) translateZ(110px); }
+.cube__face--left   { transform: rotateY(-90deg) translateZ(110px); }
+.cube__face--top    { transform: rotateX( 90deg) translateZ(110px); }
+.cube__face--bottom { transform: rotateX(-90deg) translateZ(110px); }
+

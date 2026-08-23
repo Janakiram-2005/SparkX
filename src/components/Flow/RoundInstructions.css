@@ -1,0 +1,99 @@
+.instructions-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: var(--bg-dark);
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.instructions-card {
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.15);
+  border-radius: 16px;
+  padding: 3rem;
+  max-width: 800px;
+  width: 100%;
+  color: #e2e8f0;
+}
+
+.instructions-card h1 {
+  font-size: 2rem;
+  color: #fff;
+  margin-bottom: 1rem;
+  text-align: center;
+  text-shadow: 0 0 10px rgba(168, 85, 247, 0.5);
+}
+
+.instructions-card h2 {
+  font-size: 1.5rem;
+  color: var(--purple-neon);
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.instructions-card h3 {
+  font-size: 1.2rem;
+  color: var(--orange);
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1.5rem 0;
+}
+
+.instructions-card p {
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.instruction-details ol, .instruction-details ul {
+  padding-left: 2rem;
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.instruction-details li {
+  margin-bottom: 0.5rem;
+}
+
+.warning-box {
+  background: rgba(239, 68, 68, 0.1);
+  border-left: 4px solid #ef4444;
+  padding: 1rem;
+  margin: 2rem 0;
+  border-radius: 0 8px 8px 0;
+}
+
+.warning-box p {
+  margin: 0;
+  color: #fca5a5;
+}
+
+.error-msg {
+  color: #ef4444;
+  text-align: center;
+  margin-bottom: 1rem;
+  font-weight: bold;
+}
+
+.start-exam-btn {
+  width: 100%;
+  padding: 1.2rem;
+  font-size: 1.2rem;
+  margin-top: 1rem;
+  background: linear-gradient(135deg, var(--orange), #ef4444);
+  border: none;
+  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+  transition: all 0.3s ease;
+}
+
+.start-exam-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.6);
+}
