@@ -1,0 +1,27 @@
+services:
+  # Backend Node.js API Service
+  - type: web
+    name: ai-sparkx-api
+    env: node
+    buildCommand: npm install
+    startCommand: npm run server
+    envVars:
+      # Render automatically provides RENDER_EXTERNAL_URL
+      - key: MONGO_URI
+        sync: false # You must set this manually in the Render Dashboard
+      - key: ADMIN_PASS
+        sync: false # You must set this manually in the Render Dashboard
+
+  # Frontend Static Site Service
+  - type: web
+    name: ai-sparkx-client
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    envVars:
+      # This explicitly tells Vite where the backend API is hosted during build
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: ai-sparkx-api
+          envVarKey: RENDER_EXTERNAL_URL
