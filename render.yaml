@@ -10,7 +10,7 @@ services:
       # Render automatically provides RENDER_EXTERNAL_URL
       - key: MONGO_URI
         sync: false # You must set this manually in the Render Dashboard
-      - key: ADMIN_PASS
+      - key: ADMIN_SECRET_KEY
         sync: false # You must set this manually in the Render Dashboard
 
   # Frontend Static Site Service
