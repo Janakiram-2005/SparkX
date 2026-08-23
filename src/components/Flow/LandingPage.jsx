@@ -17,7 +17,24 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
     const ScrambleTextPlugin = window.ScrambleTextPlugin;
 
     if (gsap && ScrollTrigger) {
-      gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin);
+      gsap.registerPlugin(ScrollTrigger);
+      if (SplitText) gsap.registerPlugin(SplitText);
+      if (ScrambleTextPlugin) gsap.registerPlugin(ScrambleTextPlugin);
+
+      // --- NEW: SplitText Animation for Hero Title ---
+      if (SplitText) {
+        const splitTitle = new SplitText(".hero-title", { type: "words,chars" });
+        gsap.fromTo(splitTitle.chars, 
+          { opacity: 0, y: 50, rotationX: -90 },
+          { 
+            opacity: 1, y: 0, rotationX: 0, 
+            duration: 1, 
+            stagger: 0.02, 
+            ease: "back.out(1.7)",
+            delay: 0.2
+          }
+        );
+      }
 
       // Watermark Parallax Animation
       gsap.to(watermarkRef.current, {
@@ -160,8 +177,9 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
         </svg>
 
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '10px 2rem' }}>
-          <div className="dept-logos" style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-            <img src="/logo.webp" alt="Dept Logos" style={{ height: '70px', objectFit: 'contain' }} />
+          <div className="dept-logos" style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '1rem' }}>
+            <img src="/logo.webp" alt="Vignan Logo" style={{ height: '90px', objectFit: 'contain' }} />
+            <img src="/1.png" alt="CSE Logo" style={{ height: '90px', objectFit: 'contain' }} />
           </div>
           <div style={{ flex: 1, textAlign: 'center', fontWeight: 900, fontFamily: 'Space Grotesk, sans-serif', fontSize: '1.2rem', letterSpacing: '4px', color: '#fff', textShadow: '0 0 10px rgba(168, 85, 247, 0.5)', whiteSpace: 'nowrap' }}>
             AGENTIC AI DAY <span style={{ color: 'var(--purple-neon)' }}>2026</span>
@@ -169,7 +187,6 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
           <nav style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: '2rem' }}>
             <a href="#about">About</a>
             <a href="#rounds">Rounds</a>
-            <a href="#rules">Rules</a>
             <a href="#contact">Contact</a>
           </nav>
         </header>
@@ -298,7 +315,7 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
 
         </main>
 
-        <footer style={{ 
+        <footer id="contact" style={{ 
           display: 'flex', 
           justifyContent: 'space-between', 
           alignItems: 'flex-end', 
@@ -312,10 +329,6 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
               <div style={{ fontWeight: 700, fontSize: '1.2rem' }}>Create impact.</div>
               <div style={{ color: 'var(--orange)', fontWeight: 700, fontSize: '1.2rem' }}>Spark the future.</div>
             </div>
-            
-            <div className="footer-brand" style={{ fontSize: '0.85rem', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', padding: '0.5rem 1rem', borderRadius: '4px' }}>
-              Vignan's Foundation for Science, Technology & Research &middot; Dept. of CSE
-            </div>
           </div>
 
           <div className="footer-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
@@ -328,9 +341,6 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
                 <strong style={{ display: 'block', marginBottom: '0.25rem' }}>Ms. G. Tejaswi</strong>
                 <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>+91 93980 46056</span>
               </div>
-            </div>
-            <div className="credit" style={{ color: 'var(--orange)', fontWeight: 700, fontSize: '0.9rem' }}>
-              vucse.app
             </div>
           </div>
         </footer>

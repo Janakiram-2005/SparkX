@@ -143,6 +143,30 @@ app.post('/api/admin/timer/adjust', async (req, res) => {
   }
 });
 
+// Admin Route: Add Single Team
+app.post('/api/admin/teams/add', async (req, res) => {
+  try {
+    const { teamName, ai_id, password } = req.body;
+    
+    // Assign a random puzzle
+    const puzzleBase = DEFAULT_DATABASE[Math.floor(Math.random() * DEFAULT_DATABASE.length)];
+    
+    const newTeam = new Team({
+      teamName,
+      ai_id,
+      password,
+      puzzle: puzzleBase.puzzle,
+      problemStatement: puzzleBase.problemStatement
+    });
+    
+    await newTeam.save();
+    io.to('admin_room').emit('team_update'); // trigger refresh on admin dashboard
+    res.json({ success: true, team: newTeam, message: 'Team created successfully' });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Admin Route: Promote Team to Round 2
 app.post('/api/admin/teams/promote/:id', async (req, res) => {
   try {

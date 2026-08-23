@@ -13,6 +13,8 @@ const AdminDashboard = () => {
   const [cutoff, setCutoff] = useState(20);
   
   const [editingTeam, setEditingTeam] = useState(null);
+  const [addingTeam, setAddingTeam] = useState(false);
+  const [newTeamData, setNewTeamData] = useState({ teamName: '', ai_id: '', password: '' });
 
   useEffect(() => {
     const newSocket = io((import.meta.env.VITE_API_URL || 'http://localhost:5000'));
@@ -224,6 +226,24 @@ const AdminDashboard = () => {
     }
   };
 
+  const saveNewTeam = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams/add`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTeamData)
+      });
+      const data = await res.json();
+      if(data.success) {
+        setAddingTeam(false);
+        setNewTeamData({ teamName: '', ai_id: '', password: '' });
+        fetchTeams();
+      }
+    } catch (e) {
+      alert("Failed to add team");
+    }
+  };
+
   const filteredTeams = teams.filter(t => 
     t.team_name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
     t.ai_id?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -256,9 +276,11 @@ const AdminDashboard = () => {
             <button className="btn-primary" onClick={handleFileUpload}>Import Excel</button>
           </div>
           <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
             <button className="btn-secondary" style={{flex: 1}} onClick={seedData}>Seed Mock Data</button>
             <button className="btn-danger" style={{flex: 1}} onClick={purgeData}>Purge All</button>
           </div>
+          <button className="btn-primary" style={{ width: '100%', marginBottom: '0.5rem', background: '#3b82f6' }} onClick={() => setAddingTeam(true)}>+ Add Single Team</button>
           <button className="btn-primary" style={{ width: '100%', background: '#10b981' }} onClick={exportExcel}>Export Teams to Excel</button>
         </div>
 
@@ -322,7 +344,41 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Live Leaderboard */}
+      {/* Adding Modal */}
+      {addingTeam && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Add New Team</h3>
+            <label>Team Name</label>
+            <input 
+              type="text" 
+              className="admin-input" 
+              value={newTeamData.teamName} 
+              onChange={e => setNewTeamData({...newTeamData, teamName: e.target.value})} 
+            />
+            <label>Login ID</label>
+            <input 
+              type="text" 
+              className="admin-input" 
+              value={newTeamData.ai_id} 
+              onChange={e => setNewTeamData({...newTeamData, ai_id: e.target.value})} 
+            />
+            <label>Password</label>
+            <input 
+              type="text" 
+              className="admin-input" 
+              value={newTeamData.password} 
+              onChange={e => setNewTeamData({...newTeamData, password: e.target.value})} 
+            />
+            <div style={{display: 'flex', gap: '1rem', marginTop: '1rem'}}>
+              <button className="btn-success" onClick={saveNewTeam}>Save</button>
+              <button className="btn-secondary" onClick={() => setAddingTeam(false)}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Table */}
       <div className="leaderboard-section">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
           <h2>Live Team Monitoring</h2>

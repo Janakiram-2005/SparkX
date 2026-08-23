@@ -53,23 +53,23 @@ function App() {
 
         {/* PROTECTED ROUTES */}
         <Route path="/instructions" element={
-          team ? <RoundInstructions onStartExam={() => navigate('/puzzle')} /> : <Navigate to="/login" />
+          team ? <RoundInstructions onStartExam={() => navigate('/puzzle')} /> : <Navigate to="/login" replace />
         } />
 
         <Route path="/puzzle" element={
-          team ? <JigsawPuzzle team={team} onComplete={() => navigate('/results')} /> : <Navigate to="/login" />
+          team ? <JigsawPuzzle team={team} onComplete={() => navigate('/results')} /> : <Navigate to="/login" replace />
         } />
 
         <Route path="/results" element={
-          team ? <ResultsReveal team={team} onNext={() => navigate('/feedback')} /> : <Navigate to="/login" />
+          team ? <ResultsReveal team={team} onNext={() => navigate('/feedback')} /> : <Navigate to="/login" replace />
         } />
 
         <Route path="/feedback" element={
-          team ? <FeedbackForm team={team} /> : <Navigate to="/login" />
+          team ? <FeedbackForm team={team} /> : <Navigate to="/login" replace />
         } />
         
         <Route path="/round2" element={
-          team ? <RoundTwo team={team} /> : <Navigate to="/login" />
+          team ? <RoundTwo team={team} /> : <Navigate to="/login" replace />
         } />
       </Routes>
     </>
