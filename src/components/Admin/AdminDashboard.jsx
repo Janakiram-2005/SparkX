@@ -17,7 +17,7 @@ const AdminDashboard = () => {
   const [newTeamData, setNewTeamData] = useState({ teamName: '', ai_id: '', password: '' });
 
   useEffect(() => {
-    const newSocket = io((import.meta.env.VITE_API_URL || 'http://localhost:5000'));
+    const newSocket = io(import.meta.env.PROD ? undefined : 'http://localhost:5000');
     setSocket(newSocket);
 
     newSocket.emit('join_admin');
@@ -65,13 +65,13 @@ const AdminDashboard = () => {
   }, []);
 
   const fetchTeams = async () => {
-    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams`);
+    const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams`);
     const data = await res.json();
     if (data.success) setTeams(data.teams);
   };
 
   const fetchState = async () => {
-    const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/state`);
+    const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/state`);
     const data = await res.json();
     if (data.success && data.state) {
       setIsRoundActive(Boolean(data.state.round1_active));
@@ -84,7 +84,7 @@ const AdminDashboard = () => {
     const formData = new FormData();
     formData.append('file', file);
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams/upload`, {
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/upload`, {
         method: 'POST',
         body: formData
       });
@@ -101,7 +101,7 @@ const AdminDashboard = () => {
   const seedData = async () => {
     if(!window.confirm("Seed database with temporary teams?")) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams/seed`, { method: 'POST' });
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/seed`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         alert(data.message);
@@ -115,7 +115,7 @@ const AdminDashboard = () => {
   const purgeData = async () => {
     if(!window.confirm("WARNING: Delete ALL teams from the database?")) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams/purge`, { method: 'POST' });
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/purge`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         alert(data.message);
@@ -128,7 +128,7 @@ const AdminDashboard = () => {
 
   const toggleRoundState = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/state/toggle`, {
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/state/toggle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: !isRoundActive })
@@ -142,7 +142,7 @@ const AdminDashboard = () => {
   
   const toggleRound2State = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/state/round2`, {
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/state/round2`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ active: !isRound2Active, timerMinutes: round2TimerInput })
@@ -157,7 +157,7 @@ const AdminDashboard = () => {
   const resetTeam = async (teamId) => {
     if(!window.confirm(`Are you sure you want to restart this Team? This grants another attempt.`)) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams/reset/${teamId}`, { method: 'POST' });
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/reset/${teamId}`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         fetchTeams();
@@ -170,7 +170,7 @@ const AdminDashboard = () => {
   const disqualifyTeam = async (teamId) => {
     if(!window.confirm(`Are you sure you want to toggle disqualification?`)) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams/${teamId}/disqualify`, { method: 'POST' });
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/${teamId}/disqualify`, { method: 'POST' });
       const data = await res.json();
       if (data.success) fetchTeams();
     } catch (err) {
@@ -181,7 +181,7 @@ const AdminDashboard = () => {
   const applyCutoff = async () => {
     if(!window.confirm(`Qualify top ${cutoff} teams for Round 2?`)) return;
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams/cutoff`, {
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/cutoff`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cutoff: parseInt(cutoff) })
@@ -195,7 +195,7 @@ const AdminDashboard = () => {
 
   const toggleRound2Promotion = async (teamId) => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams/promote/${teamId}`, { method: 'POST' });
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/promote/${teamId}`, { method: 'POST' });
       const data = await res.json();
       if (data.success) {
         setTeams(prev => prev.map(t => t._id === teamId ? { ...t, qualifiedForRound2: data.qualifiedForRound2 } : t));
@@ -206,12 +206,12 @@ const AdminDashboard = () => {
   };
 
   const exportExcel = () => {
-    window.location.href = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams/export`;
+    window.location.href = `${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/export`;
   };
   
   const saveTeamEdit = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams/${editingTeam._id}`, {
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/${editingTeam._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(editingTeam)
@@ -228,7 +228,7 @@ const AdminDashboard = () => {
 
   const saveNewTeam = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/admin/teams/add`, {
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/add`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newTeamData)
