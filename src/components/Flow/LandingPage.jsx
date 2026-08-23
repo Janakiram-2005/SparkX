@@ -21,20 +21,17 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
       if (SplitText) gsap.registerPlugin(SplitText);
       if (ScrambleTextPlugin) gsap.registerPlugin(ScrambleTextPlugin);
 
-      // --- NEW: SplitText Animation for Hero Title ---
-      if (SplitText) {
-        const splitTitle = new SplitText(".hero-title", { type: "words,chars" });
-        gsap.fromTo(splitTitle.chars, 
-          { opacity: 0, y: 50, rotationX: -90 },
-          { 
-            opacity: 1, y: 0, rotationX: 0, 
-            duration: 1, 
-            stagger: 0.02, 
-            ease: "back.out(1.7)",
-            delay: 0.2
-          }
-        );
-      }
+      // --- NEW: Custom SplitText Animation for Hero Title ---
+      gsap.fromTo(".title-char", 
+        { opacity: 0, y: 50, rotationX: -90 },
+        { 
+          opacity: 1, y: 0, rotationX: 0, 
+          duration: 1, 
+          stagger: 0.03, 
+          ease: "back.out(1.7)",
+          delay: 0.2
+        }
+      );
 
       // Watermark Parallax Animation
       gsap.to(watermarkRef.current, {
@@ -199,8 +196,17 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
                 <b style={{ color: '#fff' }}>Dept. of CSE</b> <span style={{ color: 'var(--text-muted)' }}>presents</span>
               </div>
               <h1 className="hero-title">
-                <span className="line1">AI SparkX</span>
-                <span className="line2">Challenge</span>
+                <span className="line1">
+                  {"AI SparkX".split('').map((char, i) => (
+                    <span key={`l1-${i}`} className="title-char" style={{ display: 'inline-block' }}>{char === ' ' ? '\u00A0' : char}</span>
+                  ))}
+                </span>
+                <br />
+                <span className="line2">
+                  {"Challenge".split('').map((char, i) => (
+                    <span key={`l2-${i}`} className="title-char" style={{ display: 'inline-block' }}>{char}</span>
+                  ))}
+                </span>
               </h1>
               <p className="hero-desc">An AI-powered design thinking ideathon. Identify real-world problems, ideate innovative solutions, and create impact — using Design Thinking and AI, in three fast rounds.</p>
 
