@@ -345,33 +345,39 @@ const AdminDashboard = () => {
 
       {/* Adding Modal */}
       {addingTeam && (
-        <div className="modal-overlay">
-          <div className="modal-content">
+        <div className="edit-modal-overlay">
+          <div className="edit-modal">
             <h3>Add New Team</h3>
-            <label>Team Name</label>
-            <input 
-              type="text" 
-              className="admin-input" 
-              value={newTeamData.teamName} 
-              onChange={e => setNewTeamData({...newTeamData, teamName: e.target.value})} 
-            />
-            <label>Login ID</label>
-            <input 
-              type="text" 
-              className="admin-input" 
-              value={newTeamData.ai_id} 
-              onChange={e => setNewTeamData({...newTeamData, ai_id: e.target.value})} 
-            />
-            <label>Password</label>
-            <input 
-              type="text" 
-              className="admin-input" 
-              value={newTeamData.password} 
-              onChange={e => setNewTeamData({...newTeamData, password: e.target.value})} 
-            />
-            <div style={{display: 'flex', gap: '1rem', marginTop: '1rem'}}>
-              <button className="btn-success" onClick={saveNewTeam}>Save</button>
+            <div className="edit-form-group">
+              <label>Team Name</label>
+              <input 
+                type="text" 
+                className="admin-input" 
+                value={newTeamData.teamName} 
+                onChange={e => setNewTeamData({...newTeamData, teamName: e.target.value})} 
+              />
+            </div>
+            <div className="edit-form-group">
+              <label>Login ID</label>
+              <input 
+                type="text" 
+                className="admin-input" 
+                value={newTeamData.ai_id} 
+                onChange={e => setNewTeamData({...newTeamData, ai_id: e.target.value})} 
+              />
+            </div>
+            <div className="edit-form-group">
+              <label>Password</label>
+              <input 
+                type="text" 
+                className="admin-input" 
+                value={newTeamData.password} 
+                onChange={e => setNewTeamData({...newTeamData, password: e.target.value})} 
+              />
+            </div>
+            <div className="edit-actions">
               <button className="btn-secondary" onClick={() => setAddingTeam(false)}>Cancel</button>
+              <button className="btn-success" onClick={saveNewTeam}>Save</button>
             </div>
           </div>
         </div>

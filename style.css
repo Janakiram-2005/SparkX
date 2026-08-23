@@ -1790,9 +1790,9 @@ body {
 #screen-landing h1.hero-title .line1 { display: block; color: var(--text); }
 #screen-landing h1.hero-title .line2 {
   display: block;
+  position: relative;
   background: linear-gradient(100deg, var(--orange) 10%, var(--amber) 45%, var(--violet) 90%);
   -webkit-background-clip: text; background-clip: text; color: transparent;
-  position: relative;
 }
 
 #screen-landing .hero-sub {

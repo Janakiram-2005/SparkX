@@ -403,6 +403,7 @@ io.on('connection', (socket) => {
   });
 
   socket.on('assign_puzzle', async ({ teamId, index }) => {
+    if (teamId === '1') return; // Ignore DB ops for dummy login
     try {
       await Team.findByIdAndUpdate(teamId, { assignedPuzzleIndex: index });
     } catch(err) { console.error('Failed to assign puzzle', err); }
@@ -411,6 +412,7 @@ io.on('connection', (socket) => {
   socket.on('puzzle_update', async (data) => {
     const { teamId, progress } = data;
     io.to('admin_room').emit('team_progress_update', { teamId, progress });
+    if (teamId === '1') return; // Ignore DB ops for dummy login
     
     try {
       await Team.findByIdAndUpdate(teamId, { jigsaw_progress: progress });
@@ -421,6 +423,7 @@ io.on('connection', (socket) => {
 
   socket.on('puzzle_complete', async (data) => {
     const { teamId, score } = data;
+    if (teamId === '1') return; // Ignore DB ops for dummy login
     try {
       await Team.findByIdAndUpdate(teamId, { status: 'completed', score: score });
       io.to('admin_room').emit('team_completed', { teamId, score });

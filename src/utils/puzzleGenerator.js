@@ -114,12 +114,37 @@ export default function generateAIAgenticImage(teamIdStr, puzzleData = null) {
     ctx.shadowBlur = 30;
     ctx.beginPath(); ctx.roundRect(-65, -60, 50, 22, 10); ctx.roundRect(15, -60, 50, 22, 10); ctx.fill();
   } else {
-    // Neural Synapse Orb fallback
-    ctx.strokeStyle = primaryColor; ctx.lineWidth = 3; ctx.shadowColor = primaryColor; ctx.shadowBlur = 30;
-    ctx.beginPath(); ctx.ellipse(0, 0, 190, 80, Math.PI / 4, 0, Math.PI * 2); ctx.stroke();
-    ctx.beginPath(); ctx.ellipse(0, 0, 190, 80, -Math.PI / 4, 0, Math.PI * 2); ctx.stroke();
-    ctx.fillStyle = '#1e1035'; ctx.strokeStyle = secondaryColor; ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.arc(0, 0, 95, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    // Geometric Star fallback
+    ctx.strokeStyle = primaryColor; ctx.lineWidth = 4; ctx.shadowColor = primaryColor; ctx.shadowBlur = 30;
+    ctx.fillStyle = '#1e1035';
+    ctx.beginPath();
+    const spikes = 5;
+    const outerRadius = 180;
+    const innerRadius = 75;
+    let rot = Math.PI / 2 * 3;
+    let x = 0; let y = 0;
+    const step = Math.PI / spikes;
+    
+    ctx.moveTo(0, -outerRadius);
+    for (let i = 0; i < spikes; i++) {
+        x = Math.cos(rot) * outerRadius;
+        y = Math.sin(rot) * outerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+
+        x = Math.cos(rot) * innerRadius;
+        y = Math.sin(rot) * innerRadius;
+        ctx.lineTo(x, y);
+        rot += step;
+    }
+    ctx.lineTo(0, -outerRadius);
+    ctx.closePath();
+    ctx.fill();
+    ctx.stroke();
+
+    // Inner glowing core
+    ctx.fillStyle = secondaryColor; ctx.shadowColor = secondaryColor; ctx.shadowBlur = 40;
+    ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI * 2); ctx.fill();
   }
   ctx.restore();
 

@@ -22,12 +22,12 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
       if (ScrambleTextPlugin) gsap.registerPlugin(ScrambleTextPlugin);
 
       // --- NEW: Custom SplitText Animation for Hero Title ---
-      gsap.fromTo(".title-char", 
-        { opacity: 0, y: 50, rotationX: -90 },
+      gsap.fromTo(".title-word", 
+        { opacity: 0, y: 50 },
         { 
-          opacity: 1, y: 0, rotationX: 0, 
+          opacity: 1, y: 0, 
           duration: 1, 
-          stagger: 0.03, 
+          stagger: 0.2, 
           ease: "back.out(1.7)",
           delay: 0.2
         }
@@ -178,7 +178,7 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
             <img src="/logo.webp" alt="Vignan Logo" style={{ height: '90px', objectFit: 'contain' }} />
             <img src="/1.png" alt="CSE Logo" style={{ height: '90px', objectFit: 'contain' }} />
           </div>
-          <div style={{ flex: 1, textAlign: 'center', fontWeight: 900, fontFamily: 'Space Grotesk, sans-serif', fontSize: '1.2rem', letterSpacing: '4px', color: '#fff', textShadow: '0 0 10px rgba(168, 85, 247, 0.5)', whiteSpace: 'nowrap' }}>
+          <div style={{ flex: 1, textAlign: 'center', fontWeight: 900, fontFamily: 'Space Grotesk, sans-serif', fontSize: '2rem', letterSpacing: '4px', color: '#fff', textShadow: '0 0 15px rgba(168, 85, 247, 0.8)', whiteSpace: 'nowrap' }}>
             AGENTIC AI DAY <span style={{ color: 'var(--purple-neon)' }}>2026</span>
           </div>
           <nav style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: '2rem' }}>
@@ -196,17 +196,8 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
                 <b style={{ color: '#fff' }}>Dept. of CSE</b> <span style={{ color: 'var(--text-muted)' }}>presents</span>
               </div>
               <h1 className="hero-title">
-                <span className="line1">
-                  {"AI SparkX".split('').map((char, i) => (
-                    <span key={`l1-${i}`} className="title-char" style={{ display: 'inline-block' }}>{char === ' ' ? '\u00A0' : char}</span>
-                  ))}
-                </span>
-                <br />
-                <span className="line2">
-                  {"Challenge".split('').map((char, i) => (
-                    <span key={`l2-${i}`} className="title-char" style={{ display: 'inline-block' }}>{char}</span>
-                  ))}
-                </span>
+                <span className="line1 title-word">AI SparkX</span>
+                <span className="line2 title-word">Challenge</span>
               </h1>
               <p className="hero-desc">An AI-powered design thinking ideathon. Identify real-world problems, ideate innovative solutions, and create impact — using Design Thinking and AI, in three fast rounds.</p>
 
