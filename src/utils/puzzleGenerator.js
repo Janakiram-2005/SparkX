@@ -1,5 +1,5 @@
 // Generate 100% Unique High-Tech AI Agentic Image per Team (50 Unique Palettes & Geometries)
-export default function generateAIAgenticImage(teamIdStr, puzzleData = null) {
+export default function generateAIAgenticImage(teamIdStr, puzzleData = null, problemStatement = null, withText = false) {
   const canvas = document.createElement('canvas');
   canvas.width = 720;
   canvas.height = 720;
@@ -14,7 +14,7 @@ export default function generateAIAgenticImage(teamIdStr, puzzleData = null) {
   
   const themeName = puzzleData?.theme || `AI Agentic System #${teamIdNum}`;
 
-  // 50 Curated Dual Accent Color Palettes for 50 Teams
+  // Curated Dual Accent Color Palettes
   const palettes = [
     { primary: '#a855f7', secondary: '#d946ef', bgInner: '#1e0938' },
     { primary: '#06b6d4', secondary: '#38bdf8', bgInner: '#06202e' },
@@ -69,7 +69,7 @@ export default function generateAIAgenticImage(teamIdStr, puzzleData = null) {
       ctx.stroke();
     }
   } else if (gridStyleMode === 2) {
-    ctx.translate(350, 350);
+    ctx.translate(360, 360);
     for (let r = 40; r <= 320; r += 40) {
       ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.stroke();
     }
@@ -78,12 +78,12 @@ export default function generateAIAgenticImage(teamIdStr, puzzleData = null) {
       ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(Math.cos(angle) * 340, Math.sin(angle) * 340); ctx.stroke();
     }
   } else if (gridStyleMode === 3) {
-    for (let i = 0; i <= 700; i += 50) {
-      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 700);
-      ctx.moveTo(0, i); ctx.lineTo(700, i); ctx.stroke();
+    for (let i = 0; i <= 720; i += 50) {
+      ctx.beginPath(); ctx.moveTo(i, 0); ctx.lineTo(i, 720);
+      ctx.moveTo(0, i); ctx.lineTo(720, i); ctx.stroke();
     }
   } else {
-    ctx.translate(350, 350);
+    ctx.translate(360, 360);
     for (let i = 0; i < 60; i++) {
       const angle = i * 0.3;
       const radius = i * 5;
@@ -92,35 +92,77 @@ export default function generateAIAgenticImage(teamIdStr, puzzleData = null) {
   }
   ctx.restore();
 
-  // 3. Central AI Agent Silhouette Avatar
+  // 3. Central AI Complex Geometric Generators
   ctx.save();
-  ctx.translate(350, 350);
-  const avatarMode = (teamIdNum % 5);
+  ctx.translate(360, 360);
+  
+  // Choose complex geometry based on team ID
+  const geoMode = teamIdNum % 4;
 
-  if (avatarMode === 0) {
-    ctx.strokeStyle = primaryColor;
-    ctx.lineWidth = 4;
-    ctx.shadowColor = primaryColor;
-    ctx.shadowBlur = 25;
-    ctx.beginPath(); ctx.arc(0, 0, 180, 0, Math.PI * 2); ctx.stroke();
+  ctx.strokeStyle = primaryColor;
+  ctx.lineWidth = 4;
+  ctx.shadowColor = primaryColor;
+  ctx.shadowBlur = 30;
 
-    ctx.fillStyle = '#171233';
-    ctx.strokeStyle = primaryColor;
-    ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.roundRect(-90, -110, 180, 150, [30, 30, 20, 20]); ctx.fill(); ctx.stroke();
-    
-    ctx.fillStyle = secondaryColor;
-    ctx.shadowColor = secondaryColor;
-    ctx.shadowBlur = 30;
-    ctx.beginPath(); ctx.roundRect(-65, -60, 50, 22, 10); ctx.roundRect(15, -60, 50, 22, 10); ctx.fill();
-  } else {
-    // Geometric Star fallback
-    ctx.strokeStyle = primaryColor; ctx.lineWidth = 4; ctx.shadowColor = primaryColor; ctx.shadowBlur = 30;
-    ctx.fillStyle = '#1e1035';
+  if (geoMode === 0) {
+    // Nested Layered Hexagons (3D look)
+    for(let r = 200; r > 50; r -= 40) {
+      ctx.beginPath();
+      for(let i = 0; i <= 6; i++) {
+        const angle = i * Math.PI / 3;
+        ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
+      }
+      ctx.stroke();
+      ctx.fillStyle = `rgba(0, 0, 0, 0.2)`;
+      ctx.fill();
+      ctx.rotate(Math.PI / 12);
+    }
+  } else if (geoMode === 1) {
+    // Complex Spirograph Ring
     ctx.beginPath();
-    const spikes = 5;
-    const outerRadius = 180;
-    const innerRadius = 75;
+    for (let i = 0; i <= 100; i++) {
+      const t = i * 0.1;
+      const x = 120 * Math.cos(3 * t) + 80 * Math.cos(7 * t);
+      const y = 120 * Math.sin(3 * t) - 80 * Math.sin(7 * t);
+      if (i === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.stroke();
+    ctx.fillStyle = `rgba(0, 0, 0, 0.4)`;
+    ctx.fill();
+  } else if (geoMode === 2) {
+    // 3D Tesseract / Hypercube wireframe projection
+    const s = 90;
+    const vertices = [
+      [-s, -s, -s], [s, -s, -s], [s, s, -s], [-s, s, -s],
+      [-s, -s, s], [s, -s, s], [s, s, s], [-s, s, s]
+    ];
+    // Scale outer and inner for 3D effect
+    const proj1 = vertices.map(v => [v[0]*1.5, v[1]*1.5]);
+    const proj2 = vertices.map(v => [v[0]*0.5, v[1]*0.5]);
+    
+    ctx.beginPath();
+    // Outer cube
+    ctx.moveTo(...proj1[0]); ctx.lineTo(...proj1[1]); ctx.lineTo(...proj1[2]); ctx.lineTo(...proj1[3]); ctx.closePath();
+    ctx.moveTo(...proj1[4]); ctx.lineTo(...proj1[5]); ctx.lineTo(...proj1[6]); ctx.lineTo(...proj1[7]); ctx.closePath();
+    // Inner cube
+    ctx.moveTo(...proj2[0]); ctx.lineTo(...proj2[1]); ctx.lineTo(...proj2[2]); ctx.lineTo(...proj2[3]); ctx.closePath();
+    ctx.moveTo(...proj2[4]); ctx.lineTo(...proj2[5]); ctx.lineTo(...proj2[6]); ctx.lineTo(...proj2[7]); ctx.closePath();
+    // Connectors
+    for(let i=0; i<4; i++) {
+      ctx.moveTo(...proj1[i]); ctx.lineTo(...proj1[i+4]);
+      ctx.moveTo(...proj2[i]); ctx.lineTo(...proj2[i+4]);
+      ctx.moveTo(...proj1[i]); ctx.lineTo(...proj2[i]);
+      ctx.moveTo(...proj1[i+4]); ctx.lineTo(...proj2[i+4]);
+    }
+    ctx.stroke();
+  } else {
+    // 8-Pointed Fractal Star
+    ctx.beginPath();
+    const spikes = 8;
+    const outerRadius = 220;
+    const innerRadius = 80;
     let rot = Math.PI / 2 * 3;
     let x = 0; let y = 0;
     const step = Math.PI / spikes;
@@ -137,24 +179,63 @@ export default function generateAIAgenticImage(teamIdStr, puzzleData = null) {
         ctx.lineTo(x, y);
         rot += step;
     }
-    ctx.lineTo(0, -outerRadius);
     ctx.closePath();
+    ctx.fillStyle = `rgba(0, 0, 0, 0.3)`;
     ctx.fill();
     ctx.stroke();
-
-    // Inner glowing core
-    ctx.fillStyle = secondaryColor; ctx.shadowColor = secondaryColor; ctx.shadowBlur = 40;
-    ctx.beginPath(); ctx.arc(0, 0, 40, 0, Math.PI * 2); ctx.fill();
   }
+
+  // Inner glowing core for all modes
+  ctx.fillStyle = secondaryColor; 
+  ctx.shadowColor = secondaryColor; 
+  ctx.shadowBlur = 40;
+  ctx.beginPath(); ctx.arc(0, 0, 35, 0, Math.PI * 2); ctx.fill();
   ctx.restore();
 
   // 4. Banners
-  ctx.fillStyle = 'rgba(10, 8, 22, 0.9)'; ctx.fillRect(0, 0, 700, 75);
+  ctx.fillStyle = 'rgba(10, 8, 22, 0.9)'; ctx.fillRect(0, 0, 720, 75);
   ctx.fillStyle = '#ffffff'; ctx.font = '900 30px "Space Grotesk", sans-serif'; ctx.textAlign = 'center';
-  ctx.shadowColor = '#000000'; ctx.shadowBlur = 10; ctx.fillText(`AI SPARKX • TEAM`, 350, 48);
-  ctx.fillStyle = 'rgba(10, 8, 22, 0.9)'; ctx.fillRect(0, 615, 700, 85);
-  ctx.fillStyle = primaryColor; ctx.font = '700 20px "Outfit", sans-serif'; ctx.fillText(themeName.toUpperCase(), 350, 655);
-  ctx.strokeStyle = primaryColor; ctx.lineWidth = 4; ctx.strokeRect(8, 8, 684, 684);
+  ctx.shadowColor = '#000000'; ctx.shadowBlur = 10; ctx.fillText(`AI SPARKX • TEAM`, 360, 48);
+  
+  if (withText && problemStatement) {
+    // Draw thick banner for problem statement at bottom
+    ctx.fillStyle = 'rgba(10, 8, 22, 0.95)'; ctx.fillRect(0, 480, 720, 240);
+    ctx.strokeStyle = primaryColor; ctx.lineWidth = 3; 
+    ctx.beginPath(); ctx.moveTo(0, 480); ctx.lineTo(720, 480); ctx.stroke();
+    
+    ctx.fillStyle = primaryColor; ctx.font = '700 24px "Outfit", sans-serif'; 
+    ctx.textAlign = 'center';
+    ctx.fillText(`PROBLEM: ${problemStatement.id}`, 360, 520);
+    
+    ctx.fillStyle = '#ffffff'; ctx.font = '16px "Space Grotesk", sans-serif';
+    ctx.shadowBlur = 0;
+    
+    // Simple text wrap for description
+    const words = problemStatement.description.split(' ');
+    let line = '';
+    let y = 550;
+    for (let n = 0; n < words.length; n++) {
+      let testLine = line + words[n] + ' ';
+      let metrics = ctx.measureText(testLine);
+      if (metrics.width > 680 && n > 0) {
+        ctx.fillText(line, 360, y);
+        line = words[n] + ' ';
+        y += 24;
+      } else {
+        line = testLine;
+      }
+    }
+    ctx.fillText(line, 360, y);
+  } else {
+    // Draw standard banner at bottom
+    ctx.fillStyle = 'rgba(10, 8, 22, 0.9)'; ctx.fillRect(0, 635, 720, 85);
+    ctx.fillStyle = primaryColor; ctx.font = '700 20px "Outfit", sans-serif'; 
+    ctx.textAlign = 'center';
+    ctx.fillText(themeName.toUpperCase(), 360, 675);
+  }
+
+  // Border
+  ctx.strokeStyle = primaryColor; ctx.lineWidth = 4; ctx.strokeRect(8, 8, 704, 704);
 
   return canvas;
 }

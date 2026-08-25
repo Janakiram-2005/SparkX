@@ -27,6 +27,10 @@ const Login = ({ onLoginSuccess }) => {
         if (data.team.disqualified) {
           setError('Your team has been disqualified. Contact admin.');
         } else {
+          localStorage.setItem('sparkx_session', JSON.stringify({
+            ai_id: data.team.ai_id,
+            sessionToken: data.team.sessionToken
+          }));
           onLoginSuccess(data.team);
         }
       } else {

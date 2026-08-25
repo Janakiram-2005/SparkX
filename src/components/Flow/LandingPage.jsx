@@ -165,7 +165,7 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
 
       <canvas id="bg-canvas-landing" style={{position:'fixed', top:0, left:0, width:'100%', height:'100%', zIndex: 10, pointerEvents:'none'}}></canvas>
       
-      <section id="screen-landing" className="screen active" style={{ display: 'block', minHeight: '100vh', position: 'relative', zIndex: 2, paddingTop: '0.5rem' }}>
+      <section id="screen-landing" className="screen active" style={{ display: 'block', minHeight: '100vh', position: 'relative', zIndex: 2, paddingTop: 0 }}>
         <div className="grain"></div>
         <svg className="circuit-bg" id="bgCircuit" xmlns="http://www.w3.org/2000/svg">
           {/* Faint background circuit paths - simplified for React */}
@@ -173,7 +173,7 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
           <path d="M 800 400 L 920 400 L 960 440 L 1120 440" stroke="#FF6A2B" strokeWidth="1" fill="none" opacity="0.10" />
         </svg>
 
-        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '10px 2rem' }}>
+        <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100vw', margin: '0 calc(-50vw + 50%)', padding: '15px 2rem', boxSizing: 'border-box', background: 'rgba(11,10,22,0.75)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(168,85,247,0.2)' }}>
           <div className="dept-logos" style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '1rem' }}>
             <img src="/logo.webp" alt="Vignan Logo" style={{ height: '90px', objectFit: 'contain' }} />
             <img src="/1.png" alt="CSE Logo" style={{ height: '90px', objectFit: 'contain' }} />

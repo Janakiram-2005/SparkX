@@ -13,9 +13,36 @@ import RoundTwo from './components/Flow/RoundTwo';
 function App() {
   const [adminAuthenticated, setAdminAuthenticated] = useState(false);
   const [team, setTeam] = useState(null);
+  const [isVerifying, setIsVerifying] = useState(true);
   const [hasSeenIntro, setHasSeenIntro] = useState(() => sessionStorage.getItem('introSeen') === 'true');
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const verifySession = async () => {
+      const sessionData = localStorage.getItem('sparkx_session');
+      if (sessionData) {
+        try {
+          const { ai_id, sessionToken } = JSON.parse(sessionData);
+          const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/auth/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ai_id, sessionToken })
+          });
+          const data = await res.json();
+          if (data.success && !data.team.disqualified) {
+            setTeam(data.team);
+          } else {
+            localStorage.removeItem('sparkx_session');
+          }
+        } catch (e) {
+          console.error("Session verification failed");
+        }
+      }
+      setIsVerifying(false);
+    };
+    verifySession();
+  }, []);
 
   useEffect(() => {
     if (location.hash === '##') {
@@ -24,6 +51,10 @@ function App() {
       navigate('/intro');
     }
   }, [location, navigate]);
+
+  if (isVerifying) {
+    return <div style={{ minHeight: '100vh', display: 'flex', justifyContent: 'center', alignItems: 'center', background: '#0B0A16', color: '#fff' }}><h2>Verifying session...</h2></div>;
+  }
 
   return (
     <>

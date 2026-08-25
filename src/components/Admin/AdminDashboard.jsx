@@ -14,7 +14,10 @@ const AdminDashboard = () => {
   
   const [editingTeam, setEditingTeam] = useState(null);
   const [addingTeam, setAddingTeam] = useState(false);
-  const [newTeamData, setNewTeamData] = useState({ teamName: '', ai_id: '', password: '' });
+  const [newTeamData, setNewTeamData] = useState({ 
+    team_name: '', ai_id: '', password: '', officialTeamId: '', eventName: '', 
+    members: [{ fullName: '', role: '', agenticAiRegId: '', universityRegNo: '', yearOfStudy: '', dob: '', phone: '', email: '' }] 
+  });
 
   useEffect(() => {
     const newSocket = io(import.meta.env.PROD ? undefined : 'http://localhost:5000');
@@ -90,8 +93,15 @@ const AdminDashboard = () => {
       });
       const data = await res.json();
       if (data.success) {
-        alert(data.message);
+        if (data.duplicates && data.duplicates.length > 0) {
+          const dupesList = data.duplicates.map(d => `${d.teamName} (ID: ${d.aiId})`).join('\n');
+          alert(`${data.message}\n\nWARNING: The following teams were skipped because their ID already exists in the system:\n${dupesList}`);
+        } else {
+          alert(data.message);
+        }
         fetchTeams();
+      } else {
+        alert(data.message || 'Upload failed');
       }
     } catch (err) {
       alert('Upload failed');
@@ -236,7 +246,10 @@ const AdminDashboard = () => {
       const data = await res.json();
       if(data.success) {
         setAddingTeam(false);
-        setNewTeamData({ teamName: '', ai_id: '', password: '' });
+        setNewTeamData({ 
+          team_name: '', ai_id: '', password: '', officialTeamId: '', eventName: '', 
+          members: [{ fullName: '', role: '', agenticAiRegId: '', universityRegNo: '', yearOfStudy: '', dob: '', phone: '', email: '' }] 
+        });
         fetchTeams();
       }
     } catch (e) {
@@ -320,22 +333,57 @@ const AdminDashboard = () => {
       
       {editingTeam && (
         <div className="edit-modal-overlay">
-          <div className="edit-modal">
+          <div className="edit-modal" style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3>Edit Team: {editingTeam.team_name}</h3>
-            <div className="edit-form-group">
-              <label>Team Name</label>
-              <input className="admin-input" value={editingTeam.team_name} onChange={e => setEditingTeam({...editingTeam, team_name: e.target.value})} />
-            </div>
-            <div className="edit-form-group">
-              <label>Login ID</label>
-              <input className="admin-input" value={editingTeam.ai_id} onChange={e => setEditingTeam({...editingTeam, ai_id: e.target.value})} />
-            </div>
-            <div className="edit-form-group">
-              <label>Password</label>
-              <input className="admin-input" value={editingTeam.password} onChange={e => setEditingTeam({...editingTeam, password: e.target.value})} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="edit-form-group">
+                <label>Team Name</label>
+                <input className="admin-input" value={editingTeam.team_name || ''} onChange={e => setEditingTeam({...editingTeam, team_name: e.target.value})} />
+              </div>
+              <div className="edit-form-group">
+                <label>Official Team ID</label>
+                <input className="admin-input" value={editingTeam.officialTeamId || ''} onChange={e => setEditingTeam({...editingTeam, officialTeamId: e.target.value})} />
+              </div>
+              <div className="edit-form-group">
+                <label>Login ID</label>
+                <input className="admin-input" value={editingTeam.ai_id || ''} onChange={e => setEditingTeam({...editingTeam, ai_id: e.target.value})} />
+              </div>
+              <div className="edit-form-group">
+                <label>Password</label>
+                <input className="admin-input" value={editingTeam.password || ''} onChange={e => setEditingTeam({...editingTeam, password: e.target.value})} />
+              </div>
             </div>
             
-            <div className="edit-actions">
+            <h4>Team Members</h4>
+            {(editingTeam.members || []).map((m, i) => (
+              <div key={i} style={{ border: '1px solid #334155', padding: '1rem', marginBottom: '1rem', borderRadius: '8px' }}>
+                <h5>Member {i + 1}</h5>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <input className="admin-input" placeholder="Full Name" value={m.fullName || ''} onChange={e => {
+                    const newMembers = [...editingTeam.members]; newMembers[i].fullName = e.target.value; setEditingTeam({...editingTeam, members: newMembers});
+                  }} />
+                  <input className="admin-input" placeholder="Role (e.g. Leader)" value={m.role || ''} onChange={e => {
+                    const newMembers = [...editingTeam.members]; newMembers[i].role = e.target.value; setEditingTeam({...editingTeam, members: newMembers});
+                  }} />
+                  <input className="admin-input" placeholder="University Reg No" value={m.universityRegNo || ''} onChange={e => {
+                    const newMembers = [...editingTeam.members]; newMembers[i].universityRegNo = e.target.value; setEditingTeam({...editingTeam, members: newMembers});
+                  }} />
+                  <input className="admin-input" placeholder="Email" value={m.email || ''} onChange={e => {
+                    const newMembers = [...editingTeam.members]; newMembers[i].email = e.target.value; setEditingTeam({...editingTeam, members: newMembers});
+                  }} />
+                  <input className="admin-input" placeholder="Phone" value={m.phone || ''} onChange={e => {
+                    const newMembers = [...editingTeam.members]; newMembers[i].phone = e.target.value; setEditingTeam({...editingTeam, members: newMembers});
+                  }} />
+                </div>
+              </div>
+            ))}
+            {(editingTeam.members || []).length < 3 && (
+              <button className="btn-secondary btn-sm" onClick={() => {
+                setEditingTeam({...editingTeam, members: [...(editingTeam.members || []), { fullName: '', role: '', agenticAiRegId: '', universityRegNo: '', yearOfStudy: '', dob: '', phone: '', email: '' }]});
+              }}>+ Add Member</button>
+            )}
+
+            <div className="edit-actions" style={{ marginTop: '2rem' }}>
                <button className="btn-secondary" onClick={() => setEditingTeam(null)}>Cancel</button>
                <button className="btn-primary" onClick={saveTeamEdit}>Save Changes</button>
             </div>
@@ -346,36 +394,62 @@ const AdminDashboard = () => {
       {/* Adding Modal */}
       {addingTeam && (
         <div className="edit-modal-overlay">
-          <div className="edit-modal">
+          <div className="edit-modal" style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}>
             <h3>Add New Team</h3>
-            <div className="edit-form-group">
-              <label>Team Name</label>
-              <input 
-                type="text" 
-                className="admin-input" 
-                value={newTeamData.teamName} 
-                onChange={e => setNewTeamData({...newTeamData, teamName: e.target.value})} 
-              />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div className="edit-form-group">
+                <label>Team Name</label>
+                <input type="text" className="admin-input" value={newTeamData.team_name} onChange={e => setNewTeamData({...newTeamData, team_name: e.target.value})} />
+              </div>
+              <div className="edit-form-group">
+                <label>Official Team ID</label>
+                <input type="text" className="admin-input" value={newTeamData.officialTeamId} onChange={e => setNewTeamData({...newTeamData, officialTeamId: e.target.value})} />
+              </div>
+              <div className="edit-form-group">
+                <label>Login ID</label>
+                <input type="text" className="admin-input" value={newTeamData.ai_id} onChange={e => setNewTeamData({...newTeamData, ai_id: e.target.value})} />
+              </div>
+              <div className="edit-form-group">
+                <label>Password</label>
+                <input type="text" className="admin-input" value={newTeamData.password} onChange={e => setNewTeamData({...newTeamData, password: e.target.value})} />
+              </div>
             </div>
-            <div className="edit-form-group">
-              <label>Login ID</label>
-              <input 
-                type="text" 
-                className="admin-input" 
-                value={newTeamData.ai_id} 
-                onChange={e => setNewTeamData({...newTeamData, ai_id: e.target.value})} 
-              />
-            </div>
-            <div className="edit-form-group">
-              <label>Password</label>
-              <input 
-                type="text" 
-                className="admin-input" 
-                value={newTeamData.password} 
-                onChange={e => setNewTeamData({...newTeamData, password: e.target.value})} 
-              />
-            </div>
-            <div className="edit-actions">
+
+            <h4>Team Members</h4>
+            {(newTeamData.members || []).map((m, i) => (
+              <div key={i} style={{ border: '1px solid #334155', padding: '1rem', marginBottom: '1rem', borderRadius: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                  <h5>Member {i + 1}</h5>
+                  <button className="btn-danger-sm" onClick={() => {
+                    const newMembers = [...newTeamData.members]; newMembers.splice(i, 1); setNewTeamData({...newTeamData, members: newMembers});
+                  }}>Remove</button>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <input className="admin-input" placeholder="Full Name" value={m.fullName || ''} onChange={e => {
+                    const newMembers = [...newTeamData.members]; newMembers[i].fullName = e.target.value; setNewTeamData({...newTeamData, members: newMembers});
+                  }} />
+                  <input className="admin-input" placeholder="Role (e.g. Leader)" value={m.role || ''} onChange={e => {
+                    const newMembers = [...newTeamData.members]; newMembers[i].role = e.target.value; setNewTeamData({...newTeamData, members: newMembers});
+                  }} />
+                  <input className="admin-input" placeholder="University Reg No" value={m.universityRegNo || ''} onChange={e => {
+                    const newMembers = [...newTeamData.members]; newMembers[i].universityRegNo = e.target.value; setNewTeamData({...newTeamData, members: newMembers});
+                  }} />
+                  <input className="admin-input" placeholder="Email" value={m.email || ''} onChange={e => {
+                    const newMembers = [...newTeamData.members]; newMembers[i].email = e.target.value; setNewTeamData({...newTeamData, members: newMembers});
+                  }} />
+                  <input className="admin-input" placeholder="Phone" value={m.phone || ''} onChange={e => {
+                    const newMembers = [...newTeamData.members]; newMembers[i].phone = e.target.value; setNewTeamData({...newTeamData, members: newMembers});
+                  }} />
+                </div>
+              </div>
+            ))}
+            {(newTeamData.members || []).length < 3 && (
+              <button className="btn-secondary btn-sm" onClick={() => {
+                setNewTeamData({...newTeamData, members: [...(newTeamData.members || []), { fullName: '', role: '', agenticAiRegId: '', universityRegNo: '', yearOfStudy: '', dob: '', phone: '', email: '' }]});
+              }}>+ Add Member</button>
+            )}
+
+            <div className="edit-actions" style={{ marginTop: '2rem' }}>
               <button className="btn-secondary" onClick={() => setAddingTeam(false)}>Cancel</button>
               <button className="btn-success" onClick={saveNewTeam}>Save</button>
             </div>

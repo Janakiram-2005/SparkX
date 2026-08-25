@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import generateAIAgenticImage from '../../utils/puzzleGenerator';
 import { DEFAULT_DATABASE } from '../../../database';
@@ -6,6 +7,7 @@ import './JigsawPuzzle.css';
 
 const JigsawPuzzle = ({ team, onComplete }) => {
   const [targetDataUrl, setTargetDataUrl] = useState('');
+  const [targetDataUrlNoText, setTargetDataUrlNoText] = useState('');
   const [pieces, setPieces] = useState([]);
   const [boardSlots, setBoardSlots] = useState(Array(36).fill(null));
   const [trayPieces, setTrayPieces] = useState([]);
@@ -21,6 +23,9 @@ const JigsawPuzzle = ({ team, onComplete }) => {
   const [warningText, setWarningText] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(true);
   const [showRefModal, setShowRefModal] = useState(false);
+  const [tabWarnings, setTabWarnings] = useState(0);
+  const [showTabWarning, setShowTabWarning] = useState(false);
+  const navigate = useNavigate();
   
   const [socket, setSocket] = useState(null);
   const timerRef = useRef(null);
@@ -44,8 +49,14 @@ const JigsawPuzzle = ({ team, onComplete }) => {
       newSocket.emit('assign_puzzle', { teamId: team.id || team._id, index: assignedIdx });
     }
 
-    const masterCanvas = generateAIAgenticImage(team.id || team._id, assignedData);
-    setTargetDataUrl(masterCanvas.toDataURL('image/png'));
+    const problemStatement = DEFAULT_DATABASE[assignedIdx].problemStatement;
+    
+    // Generate two canvases: one for pieces (no text) and one for reference/flip (with text)
+    const masterCanvas = generateAIAgenticImage(team.id || team._id, assignedData, problemStatement, false);
+    const masterCanvasRef = generateAIAgenticImage(team.id || team._id, assignedData, problemStatement, true);
+    
+    setTargetDataUrl(masterCanvasRef.toDataURL('image/png'));
+    setTargetDataUrlNoText(masterCanvas.toDataURL('image/png'));
 
     const generatedPieces = [];
     const tileSize = 120;
@@ -77,6 +88,12 @@ const JigsawPuzzle = ({ team, onComplete }) => {
       });
     });
 
+    newSocket.on('disqualified', () => {
+      alert("YOUR TEAM HAS BEEN DISQUALIFIED FOR TAB SWITCHING.");
+      localStorage.removeItem('sparkx_session');
+      navigate('/login');
+    });
+
     return () => newSocket.disconnect();
   }, [team.id, team._id]);
 
@@ -89,9 +106,31 @@ const JigsawPuzzle = ({ team, onComplete }) => {
         setIsFullscreen(true);
       }
     };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab switch detected
+        setTabWarnings(prev => {
+          const newCount = prev + 1;
+          if (newCount >= 3) {
+             if (socket) socket.emit('tab_switch_violation', { teamId: team.id || team._id });
+          } else {
+             setShowTabWarning(true);
+             if (socket) socket.emit('tab_switch_violation', { teamId: team.id || team._id });
+          }
+          return newCount;
+        });
+      }
+    };
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [socket, team]);
 
   const requestFullscreen = async () => {
     try {
@@ -203,7 +242,7 @@ const JigsawPuzzle = ({ team, onComplete }) => {
     e.dataTransfer.setData('text/plain', JSON.stringify({ pieceId: piece.id, source, locationIndex }));
   };
 
-  const handleDrop = (e, targetSlotIndex) => {
+  const handleDropBoard = (e, targetSlotIndex) => {
     if (phase === 'locked') return;
     e.preventDefault();
     const rawData = e.dataTransfer.getData('text/plain');
@@ -215,6 +254,26 @@ const JigsawPuzzle = ({ team, onComplete }) => {
     executeMovePiece({ pieceId: data.pieceId, piece: pieceObj, source: data.source, locationIndex: data.locationIndex }, targetSlotIndex);
   };
 
+  const handleDropTray = (e) => {
+    if (phase === 'locked') return;
+    e.preventDefault();
+    const rawData = e.dataTransfer.getData('text/plain');
+    if (!rawData) return;
+    const data = JSON.parse(rawData);
+    
+    if (data.source === 'board') {
+      const pieceObj = pieces.find(p => p.id === data.pieceId);
+      if (!pieceObj) return;
+      
+      let newTray = [...trayPieces, pieceObj];
+      let newBoard = [...boardSlots];
+      newBoard[data.locationIndex] = null;
+      
+      setTrayPieces(newTray);
+      setBoardSlots(newBoard);
+    }
+  };
+
   const formatTime = (secs) => {
     const m = Math.floor(secs / 60);
     const s = secs % 60;
@@ -224,11 +283,27 @@ const JigsawPuzzle = ({ team, onComplete }) => {
   return (
     <div className="puzzle-layout">
       {/* Anti Cheat Overlay */}
-      {!isFullscreen && (
+      {!isFullscreen && !showTabWarning && (
         <div className="anti-cheat-overlay">
           <h2>⚠️ FULL SCREEN EXITED</h2>
           <p>The timer has been paused. You must remain in full-screen to continue.</p>
           <button className="btn-primary" onClick={requestFullscreen}>ENTER FULL SCREEN</button>
+        </div>
+      )}
+
+      {/* Tab Switch Overlay */}
+      {showTabWarning && (
+        <div className="anti-cheat-overlay" style={{ background: 'rgba(220, 38, 38, 0.95)' }}>
+          <h1 style={{ fontSize: '3rem', margin: 0, textShadow: '0 0 20px #000' }}>⚠️ TAB SWITCH DETECTED</h1>
+          <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
+            Warning {tabWarnings} of 3.
+          </p>
+          <p>Switching tabs or minimizing the browser is strictly prohibited. Your actions have been logged.</p>
+          <p style={{ marginTop: '1rem', color: '#ffb' }}>Reaching 3 warnings will result in immediate disqualification.</p>
+          <button className="btn-primary" style={{ marginTop: '2rem', background: '#000', color: '#fff', border: '1px solid #fff' }} onClick={() => {
+            setShowTabWarning(false);
+            requestFullscreen();
+          }}>I UNDERSTAND</button>
         </div>
       )}
 
@@ -276,40 +351,53 @@ const JigsawPuzzle = ({ team, onComplete }) => {
             >
               &times;
             </button>
-            <h3 style={{ marginTop: 0, color: 'var(--violet)' }}>Target Reference</h3>
-            <img src={targetDataUrl} alt="Reference" style={{ width: '400px', height: '400px', objectFit: 'cover', borderRadius: '8px' }} />
+            <h3 style={{ marginTop: 0, color: 'var(--purple-neon)' }}>Target Reference</h3>
+            <img src={targetDataUrlNoText} alt="Reference" style={{ width: '400px', height: '400px', objectFit: 'cover', borderRadius: '8px' }} />
           </div>
         </div>
       )}
 
       <div className="puzzle-main-content">
         <div className="board-wrapper">
-          <div className={`board-grid ${phase === 'locked' ? 'board-locked' : ''}`}>
-            {boardSlots.map((piece, i) => (
-              <div 
-                key={i} 
-                className={`board-slot ${piece && piece.id === i ? 'correct-slot' : ''}`}
-                onDragOver={e => e.preventDefault()}
-                onDrop={e => handleDrop(e, i)}
-              >
-                {piece ? (
-                  <img 
-                    src={piece.dataUrl} 
-                    alt="piece" 
-                    className="puzzle-piece"
-                    draggable={phase !== 'locked'}
-                    onDragStart={e => handleDragStart(e, piece, 'board', i)}
-                  />
-                ) : (
-                  <span className="slot-number">{i + 1}</span>
-                )}
+          <div className={`flip-container ${matchedCount === 36 ? 'flipped' : ''}`}>
+            <div className="flip-inner">
+              <div className="flip-front">
+                <div className={`board-grid ${phase === 'locked' ? 'board-locked' : ''}`}>
+                  {boardSlots.map((piece, i) => (
+                    <div 
+                      key={i} 
+                      className={`board-slot ${piece && piece.id === i ? 'correct-slot' : ''}`}
+                      onDragOver={e => e.preventDefault()}
+                      onDrop={e => handleDropBoard(e, i)}
+                    >
+                      {piece ? (
+                        <img 
+                          src={piece.dataUrl} 
+                          alt="piece" 
+                          className="puzzle-piece"
+                          draggable={phase !== 'locked'}
+                          onDragStart={e => handleDragStart(e, piece, 'board', i)}
+                        />
+                      ) : (
+                        <span className="slot-number">{i + 1}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+              <div className="flip-back">
+                <img src={targetDataUrl} alt="Solved Puzzle" className="solved-image" />
+              </div>
+            </div>
           </div>
           {phase === 'locked' && <div className="locked-overlay-text">UI FAMILIARIZATION PHASE. PIECES ARE LOCKED.</div>}
         </div>
 
-        <div className="tray-wrapper">
+        <div 
+          className="tray-wrapper"
+          onDragOver={e => e.preventDefault()}
+          onDrop={handleDropTray}
+        >
           <div className="tray-grid">
             {trayPieces.map((piece, i) => (
               <img 

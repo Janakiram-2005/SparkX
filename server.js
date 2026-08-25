@@ -8,6 +8,7 @@ import xlsx from 'xlsx';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -58,12 +59,39 @@ app.post('/api/auth/login', async (req, res) => {
   try {
     const team = await Team.findOne({ ai_id, password }).select('_id team_name ai_id status');
     if (team) {
+      // Generate session token
+      const sessionToken = crypto.randomBytes(32).toString('hex');
+      team.sessionToken = sessionToken;
+      await team.save();
+
       // Map _id to id for frontend consistency
       const teamObj = team.toObject();
       teamObj.id = teamObj._id; 
+      teamObj.sessionToken = sessionToken; // send to frontend
       res.json({ success: true, team: teamObj });
     } else {
       res.status(401).json({ success: false, message: 'Invalid credentials' });
+    }
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Auth Route: Verify Session Token
+app.post('/api/auth/verify', async (req, res) => {
+  const { ai_id, sessionToken } = req.body;
+  try {
+    if (!ai_id || !sessionToken) {
+      return res.status(401).json({ success: false, message: 'Missing credentials' });
+    }
+    const team = await Team.findOne({ ai_id, sessionToken }).select('_id team_name ai_id status disqualified');
+    if (team) {
+      const teamObj = team.toObject();
+      teamObj.id = teamObj._id;
+      teamObj.sessionToken = sessionToken;
+      res.json({ success: true, team: teamObj });
+    } else {
+      res.status(401).json({ success: false, message: 'Invalid or expired session' });
     }
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });
@@ -151,15 +179,18 @@ app.post('/api/admin/timer/adjust', async (req, res) => {
 // Admin Route: Add Single Team
 app.post('/api/admin/teams/add', async (req, res) => {
   try {
-    const { teamName, ai_id, password } = req.body;
+    const { team_name, ai_id, password, officialTeamId, eventName, members } = req.body;
     
     // Assign a random puzzle
     const puzzleBase = DEFAULT_DATABASE[Math.floor(Math.random() * DEFAULT_DATABASE.length)];
     
     const newTeam = new Team({
-      teamName,
+      team_name,
       ai_id,
       password,
+      officialTeamId: officialTeamId || '',
+      eventName: eventName || '',
+      members: members || [],
       puzzle: puzzleBase.puzzle,
       problemStatement: puzzleBase.problemStatement
     });
@@ -210,6 +241,8 @@ app.post('/api/admin/teams/reset/:id', async (req, res) => {
       status: 'waiting', 
       jigsaw_progress: 0, 
       score: 0,
+      sessionToken: "",
+      tabSwitchCount: 0,
       $inc: { round1_attempts: 1 }
     });
     io.to(`team_${teamId}`).emit('exam_reset');
@@ -230,21 +263,60 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
     const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     let insertedCount = 0;
+    const duplicates = [];
+    
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
       const teamName = row.TeamName || row.team_name || row['Team Name'] || `Team ${i+1}`;
-      const aiId = String(i + 1);
-      const password = `AIX${Math.floor(100 + Math.random() * 900)}`;
+      const officialTeamId = row.OfficialTeamId || row.officialTeamId || row['Official Team ID'] || '';
+      const aiId = String(row.AI_ID || row.ai_id || row['Login ID'] || i + 1);
+      const password = row.Password || row.password || `AIX${Math.floor(100 + Math.random() * 900)}`;
 
-      await Team.updateOne(
-        { ai_id: aiId }, 
-        { team_name: teamName, password },
-        { upsert: true }
-      );
+      // Check if duplicate
+      const existing = await Team.findOne({ 
+        $or: [
+          { ai_id: aiId }, 
+          { officialTeamId: officialTeamId !== '' ? officialTeamId : 'xyz_invalid' }
+        ] 
+      });
+
+      if (existing) {
+        duplicates.push({ teamName, aiId, officialTeamId, reason: 'Duplicate Login ID or Official Team ID' });
+        continue;
+      }
+
+      // Extract members if present in Excel (e.g., Member 1 Name, Member 1 Role, etc.)
+      const members = [];
+      for (let m = 1; m <= 3; m++) {
+        if (row[`Member ${m} Name`]) {
+          members.push({
+            fullName: row[`Member ${m} Name`],
+            role: row[`Member ${m} Role`] || '',
+            universityRegNo: row[`Member ${m} RegNo`] || '',
+            email: row[`Member ${m} Email`] || '',
+            phone: row[`Member ${m} Phone`] || ''
+          });
+        }
+      }
+
+      const puzzleBase = DEFAULT_DATABASE[Math.floor(Math.random() * DEFAULT_DATABASE.length)];
+
+      const newTeam = new Team({
+        team_name: teamName,
+        ai_id: aiId,
+        password: password,
+        officialTeamId: officialTeamId,
+        eventName: row.EventName || row.eventName || '',
+        members: members,
+        puzzle: puzzleBase.puzzle,
+        problemStatement: puzzleBase.problemStatement
+      });
+
+      await newTeam.save();
       insertedCount++;
     }
 
-    res.json({ success: true, message: `Successfully processed ${insertedCount} teams.` });
+    res.json({ success: true, message: `Successfully processed ${insertedCount} teams.`, duplicates });
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Error processing Excel file' });
@@ -254,13 +326,37 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
 // Admin Route: Export Teams to Excel
 app.get('/api/admin/teams/export', async (req, res) => {
   try {
-    const teams = await Team.find().select('team_name ai_id password score jigsaw_progress status -_id').lean();
-    const ws = xlsx.utils.json_to_sheet(teams);
+    const teams = await Team.find().lean();
+    
+    // Map teams to exclude gameplay stats
+    const exportData = teams.map(t => {
+      const mapped = {
+        'Team Name': t.team_name,
+        'Official Team ID': t.officialTeamId,
+        'Login ID (ai_id)': t.ai_id,
+        'Password': t.password,
+        'Event Name': t.eventName
+      };
+      
+      // Flatten members
+      if (t.members && t.members.length > 0) {
+        t.members.forEach((m, i) => {
+          mapped[`Member ${i+1} Name`] = m.fullName;
+          mapped[`Member ${i+1} Role`] = m.role;
+          mapped[`Member ${i+1} RegNo`] = m.universityRegNo;
+          mapped[`Member ${i+1} Email`] = m.email;
+          mapped[`Member ${i+1} Phone`] = m.phone;
+        });
+      }
+      return mapped;
+    });
+
+    const ws = xlsx.utils.json_to_sheet(exportData);
     const wb = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(wb, ws, "Teams Results");
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
     
-    res.setHeader('Content-Disposition', 'attachment; filename="AI_SparkX_Results.xlsx"');
+    res.setHeader('Content-Disposition', 'attachment; filename="AI_SparkX_Teams.xlsx"');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(buffer);
   } catch (error) {
@@ -313,13 +409,23 @@ app.post('/api/admin/teams/purge', async (req, res) => {
   }
 });
 
-// Update single team (Manual Edit)
+// Admin Route: Edit Team
 app.put('/api/admin/teams/:id', async (req, res) => {
   try {
-    const updated = await Team.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json({ success: true, team: updated, message: 'Team updated.' });
+    const { team_name, ai_id, password, officialTeamId, eventName, members } = req.body;
+    const team = await Team.findByIdAndUpdate(req.params.id, { 
+      team_name, 
+      ai_id, 
+      password,
+      officialTeamId,
+      eventName,
+      members
+    }, { new: true });
+    
+    io.to('admin_room').emit('team_update');
+    res.json({ success: true, team });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Update failed' });
+    res.status(500).json({ success: false, message: 'Error updating team' });
   }
 });
 
@@ -434,6 +540,23 @@ io.on('connection', (socket) => {
       io.to('admin_room').emit('team_completed', { teamId, score });
     } catch (err) {
       console.error(err);
+    }
+  });
+
+  socket.on('tab_switch_violation', async ({ teamId }) => {
+    try {
+      const team = await Team.findById(teamId);
+      if (team) {
+        team.tabSwitchCount += 1;
+        if (team.tabSwitchCount >= 3) {
+          team.disqualified = true;
+          io.to(`team_${teamId}`).emit('disqualified');
+        }
+        await team.save();
+        io.to('admin_room').emit('team_update');
+      }
+    } catch (e) {
+      console.error('Tab switch update error:', e);
     }
   });
 
