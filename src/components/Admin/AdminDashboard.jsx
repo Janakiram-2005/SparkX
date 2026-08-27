@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 import './AdminDashboard.css';
 
 const AdminDashboard = () => {
+  const navigate = useNavigate();
   const [teams, setTeams] = useState([]);
   const [file, setFile] = useState(null);
   const [isRoundActive, setIsRoundActive] = useState(false);
@@ -16,11 +18,6 @@ const AdminDashboard = () => {
   const [alerts, setAlerts] = useState([]);
 
   const [editingTeam, setEditingTeam] = useState(null);
-  const [addingTeam, setAddingTeam] = useState(false);
-  const [newTeamData, setNewTeamData] = useState({ 
-    team_name: '', ai_id: '', password: '', officialTeamId: '', eventName: '', 
-    members: [{ fullName: '', role: '', agenticAiRegId: '', universityRegNo: '', yearOfStudy: '', dob: '', phone: '', email: '' }] 
-  });
 
   const fileInputRef = useRef(null);
 
@@ -162,6 +159,36 @@ const AdminDashboard = () => {
     }
   };
 
+  const downloadTemplate = () => {
+    import('xlsx').then(xlsx => {
+      const templateData = [{
+        'Team Name': '',
+        'Registration Number': '',
+        'Login ID': '',
+        'Password': '',
+        'Member 1 Name': '',
+        'Member 1 AI ID': '',
+        'Member 1 RegNo': '',
+        'Member 1 Email': '',
+        'Member 1 Phone': '',
+        'Member 2 Name': '',
+        'Member 2 AI ID': '',
+        'Member 2 RegNo': '',
+        'Member 2 Email': '',
+        'Member 2 Phone': '',
+        'Member 3 Name': '',
+        'Member 3 AI ID': '',
+        'Member 3 RegNo': '',
+        'Member 3 Email': '',
+        'Member 3 Phone': ''
+      }];
+      const ws = xlsx.utils.json_to_sheet(templateData);
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(wb, ws, "Template");
+      xlsx.writeFile(wb, "AI_SparkX_Team_Template.xlsx");
+    });
+  };
+
   const purgeData = async () => {
     if(!window.confirm('WARNING: Delete ALL teams from the database?')) return;
     try {
@@ -173,6 +200,23 @@ const AdminDashboard = () => {
       }
     } catch (err) {
       alert('Purge failed');
+    }
+  };
+
+  const factoryReset = async () => {
+    if(!window.confirm('WARNING: Are you sure you want to FACTORY RESET? This clears all progress, stops all rounds, and prepares the system for the real exam. Uploaded teams will NOT be deleted.')) return;
+    try {
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/system/factory-reset`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        fetchTeams();
+        fetchState();
+      } else {
+        alert(data.message);
+      }
+    } catch (err) {
+      alert('Factory Reset failed');
     }
   };
 
@@ -345,10 +389,14 @@ const AdminDashboard = () => {
           <div className="sidebar-section">
             <h3>Database Management</h3>
             
-            <input type="file" ref={fileInputRef} style={{display: 'none'}} accept=".xlsx, .xls" onChange={e => setFile(e.target.files[0])} />
-            <button onClick={() => fileInputRef.current.click()} className="sidebar-btn">
+            <input type="file" accept=".xlsx, .xls" style={{display: 'none'}} id="upload-excel" onChange={handleFileUpload} />
+            <button onClick={() => document.getElementById('upload-excel').click()} className="sidebar-btn btn-accent">
               <i className="fa-solid fa-file-excel"></i>
               Import Excel
+            </button>
+            <button onClick={downloadTemplate} className="sidebar-btn" style={{background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', marginTop: '0.5rem'}}>
+              <i className="fa-solid fa-download"></i>
+              Download Template
             </button>
             
             <button onClick={seedData} className="sidebar-btn">
@@ -356,9 +404,14 @@ const AdminDashboard = () => {
               Seed DB
             </button>
             
-            <button onClick={() => setAddingTeam(true)} className="sidebar-btn btn-accent">
+            <button onClick={() => navigate('/admin/add-team')} className="sidebar-btn btn-accent">
               <i className="fa-solid fa-user-plus"></i>
               Add Team
+            </button>
+            
+            <button onClick={factoryReset} className="sidebar-btn" style={{background: 'rgba(234, 179, 8, 0.2)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.5)'}}>
+              <i className="fa-solid fa-power-off"></i>
+              Factory Reset Progress
             </button>
             
             <button onClick={purgeData} className="sidebar-btn btn-danger-link">
@@ -553,7 +606,9 @@ const AdminDashboard = () => {
                    alerts.map(a => (
                      <div key={a.id} className="alert-item" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: '8px', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                        <div>
-                         <h3 style={{ margin: '0 0 0.5rem 0', color: '#ef4444', fontSize: '1.25rem' }}>{a.teamName} (Team #{a.teamId}) raised an issue!</h3>
+                         <h3 style={{ margin: '0 0 0.5rem 0', color: '#ef4444', fontSize: '1.25rem' }}>
+                           {a.teamName} (Team No: {a.officialTeamId || a.teamId}) raised an issue!
+                         </h3>
                          <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Raised at: {new Date(a.timestamp).toLocaleTimeString()}</span>
                        </div>
                        <button className="btn-primary" style={{ background: '#ef4444', border: 'none', color: '#fff' }} onClick={() => resolveAlert(a.id)}>Mark Resolved</button>
@@ -603,7 +658,7 @@ const AdminDashboard = () => {
                 </div>
                 <div className="form-grid" style={{marginBottom: 0}}>
                   <div className="form-group"><input placeholder="Full Name" value={m.fullName || ''} onChange={e => { const newMembers = [...editingTeam.members]; newMembers[i].fullName = e.target.value; setEditingTeam({...editingTeam, members: newMembers}); }} /></div>
-                  <div className="form-group"><input placeholder="Role" value={m.role || ''} onChange={e => { const newMembers = [...editingTeam.members]; newMembers[i].role = e.target.value; setEditingTeam({...editingTeam, members: newMembers}); }} /></div>
+                  <div className="form-group"><input placeholder="AI ID" value={m.agenticAiRegId || ''} onChange={e => { const newMembers = [...editingTeam.members]; newMembers[i].agenticAiRegId = e.target.value; setEditingTeam({...editingTeam, members: newMembers}); }} /></div>
                   <div className="form-group"><input placeholder="University Reg No" value={m.universityRegNo || ''} onChange={e => { const newMembers = [...editingTeam.members]; newMembers[i].universityRegNo = e.target.value; setEditingTeam({...editingTeam, members: newMembers}); }} /></div>
                   <div className="form-group"><input placeholder="Email" value={m.email || ''} onChange={e => { const newMembers = [...editingTeam.members]; newMembers[i].email = e.target.value; setEditingTeam({...editingTeam, members: newMembers}); }} /></div>
                   <div className="form-group"><input placeholder="Phone" value={m.phone || ''} onChange={e => { const newMembers = [...editingTeam.members]; newMembers[i].phone = e.target.value; setEditingTeam({...editingTeam, members: newMembers}); }} /></div>
@@ -612,7 +667,7 @@ const AdminDashboard = () => {
             ))}
             {(editingTeam.members || []).length < 3 && (
               <button type="button" className="btn-secondary" onClick={() => {
-                setEditingTeam({...editingTeam, members: [...(editingTeam.members || []), { fullName: '', role: '', agenticAiRegId: '', universityRegNo: '', yearOfStudy: '', dob: '', phone: '', email: '' }]});
+                setEditingTeam({...editingTeam, members: [...(editingTeam.members || []), { fullName: '', agenticAiRegId: '', universityRegNo: '', yearOfStudy: '', dob: '', phone: '', email: '' }]});
               }}>+ Add Member</button>
             )}
 
@@ -624,62 +679,7 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* Adding Modal */}
-      {addingTeam && (
-        <div className="modal-overlay" onClick={() => setAddingTeam(false)}>
-          <div className="modal-content" onClick={e => e.stopPropagation()}>
-            <h3>Add New Team</h3>
-            
-            <div className="form-grid">
-              <div className="form-group">
-                <label>Team Name</label>
-                <input value={newTeamData.team_name} onChange={e => setNewTeamData({...newTeamData, team_name: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label>Official Team ID</label>
-                <input value={newTeamData.officialTeamId} onChange={e => setNewTeamData({...newTeamData, officialTeamId: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label>Login ID (AI Code)</label>
-                <input value={newTeamData.ai_id} onChange={e => setNewTeamData({...newTeamData, ai_id: e.target.value})} />
-              </div>
-              <div className="form-group">
-                <label>Password</label>
-                <input value={newTeamData.password} onChange={e => setNewTeamData({...newTeamData, password: e.target.value})} />
-              </div>
-            </div>
-
-            <h3>Team Members</h3>
-            {(newTeamData.members || []).map((m, i) => (
-              <div key={i} className="member-card">
-                <div className="member-card-header">
-                  <h5>Member {i + 1}</h5>
-                  <button className="btn-remove" onClick={() => {
-                    const newMembers = [...newTeamData.members]; newMembers.splice(i, 1); setNewTeamData({...newTeamData, members: newMembers});
-                  }}>Remove</button>
-                </div>
-                <div className="form-grid" style={{marginBottom: 0}}>
-                  <div className="form-group"><input placeholder="Full Name" value={m.fullName || ''} onChange={e => { const newMembers = [...newTeamData.members]; newMembers[i].fullName = e.target.value; setNewTeamData({...newTeamData, members: newMembers}); }} /></div>
-                  <div className="form-group"><input placeholder="Role" value={m.role || ''} onChange={e => { const newMembers = [...newTeamData.members]; newMembers[i].role = e.target.value; setNewTeamData({...newTeamData, members: newMembers}); }} /></div>
-                  <div className="form-group"><input placeholder="University Reg No" value={m.universityRegNo || ''} onChange={e => { const newMembers = [...newTeamData.members]; newMembers[i].universityRegNo = e.target.value; setNewTeamData({...newTeamData, members: newMembers}); }} /></div>
-                  <div className="form-group"><input placeholder="Email" value={m.email || ''} onChange={e => { const newMembers = [...newTeamData.members]; newMembers[i].email = e.target.value; setNewTeamData({...newTeamData, members: newMembers}); }} /></div>
-                  <div className="form-group"><input placeholder="Phone" value={m.phone || ''} onChange={e => { const newMembers = [...newTeamData.members]; newMembers[i].phone = e.target.value; setNewTeamData({...newTeamData, members: newMembers}); }} /></div>
-                </div>
-              </div>
-            ))}
-            {(newTeamData.members || []).length < 3 && (
-              <button type="button" className="btn-secondary" onClick={() => {
-                setNewTeamData({...newTeamData, members: [...(newTeamData.members || []), { fullName: '', role: '', agenticAiRegId: '', universityRegNo: '', yearOfStudy: '', dob: '', phone: '', email: '' }]});
-              }}>+ Add Member</button>
-            )}
-
-            <div className="modal-actions">
-              <button type="button" className="btn-secondary" onClick={() => setAddingTeam(false)}>Cancel</button>
-              <button type="button" className="btn-primary" onClick={saveNewTeam}>Save Team</button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Adding Modal Removed (moved to separate page) */}
     </div>
   );
 };

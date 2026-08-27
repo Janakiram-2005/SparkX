@@ -20,6 +20,7 @@ dotenv.config();
 import Team from './models/Team.js';
 import SystemState from './models/SystemState.js';
 import Feedback from './models/Feedback.js';
+import { DEFAULT_DATABASE } from './database.js';
 
 const teamAlerts = []; // Store active issues { id, teamId, teamName, timestamp }
 
@@ -59,6 +60,23 @@ mongoose.connect(MONGO_URI)
   })
   .catch(err => console.error('MongoDB connection error:', err));
 
+import fs from 'fs';
+
+app.get('/api/system/image-count', (req, res) => {
+  try {
+    const imagesDir = path.join(__dirname, 'public', 'puzzles', 'images');
+    if (!fs.existsSync(imagesDir)) {
+      return res.json({ count: 0 });
+    }
+    const files = fs.readdirSync(imagesDir);
+    const jpgFiles = files.filter(f => f.toLowerCase().endsWith('.jpg') || f.toLowerCase().endsWith('.jpeg'));
+    res.json({ count: jpgFiles.length });
+  } catch (error) {
+    console.error("Error reading image count:", error);
+    res.json({ count: 0 });
+  }
+});
+
 
 // === REST API ROUTES ===
 
@@ -70,7 +88,7 @@ app.get('/api/health', (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   const { ai_id, password } = req.body;
   try {
-    const team = await Team.findOne({ ai_id, password }).select('_id team_name ai_id status disqualified qualifiedForRound2');
+    const team = await Team.findOne({ ai_id, password }).select('_id team_name ai_id status disqualified qualifiedForRound2 assignedPuzzleIndex officialTeamId');
     if (team) {
       if (team.disqualified) {
         return res.json({ success: false, message: 'Your team has been disqualified.' });
@@ -108,7 +126,7 @@ app.post('/api/auth/verify', async (req, res) => {
     if (!ai_id || !sessionToken) {
       return res.status(401).json({ success: false, message: 'Missing credentials' });
     }
-    const team = await Team.findOne({ ai_id, sessionToken }).select('_id team_name ai_id status disqualified qualifiedForRound2');
+    const team = await Team.findOne({ ai_id, sessionToken }).select('_id team_name ai_id status disqualified qualifiedForRound2 assignedPuzzleIndex officialTeamId');
     if (team) {
       if (team.disqualified) {
         return res.json({ success: false, message: 'Your team has been disqualified.' });
@@ -217,7 +235,8 @@ app.post('/api/admin/teams/add', async (req, res) => {
     const { team_name, ai_id, password, officialTeamId, eventName, members } = req.body;
     
     // Assign a random puzzle
-    const puzzleBase = DEFAULT_DATABASE[Math.floor(Math.random() * DEFAULT_DATABASE.length)];
+    const assignedIdx = Math.floor(Math.random() * DEFAULT_DATABASE.length);
+    const puzzleBase = DEFAULT_DATABASE[assignedIdx];
     
     const newTeam = new Team({
       team_name,
@@ -226,6 +245,7 @@ app.post('/api/admin/teams/add', async (req, res) => {
       officialTeamId: officialTeamId || '',
       eventName: eventName || '',
       members: members || [],
+      assignedPuzzleIndex: assignedIdx,
       puzzle: puzzleBase.puzzle,
       problemStatement: puzzleBase.problemStatement
     });
@@ -347,7 +367,7 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
           if (row[`Member ${m} Name`]) {
             members.push({
               fullName: row[`Member ${m} Name`],
-              role: row[`Member ${m} Role`] || '',
+              agenticAiRegId: row[`Member ${m} AI ID`] || row[`Member ${m} Role`] || '',
               universityRegNo: row[`Member ${m} RegNo`] || '',
               email: row[`Member ${m} Email`] || '',
               phone: row[`Member ${m} Phone`] || ''
@@ -356,7 +376,8 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
         }
       }
 
-      const puzzleBase = DEFAULT_DATABASE[Math.floor(Math.random() * DEFAULT_DATABASE.length)];
+      const assignedIdx = Math.floor(Math.random() * DEFAULT_DATABASE.length);
+      const puzzleBase = DEFAULT_DATABASE[assignedIdx];
 
       const newTeam = new Team({
         team_name: teamName,
@@ -365,6 +386,7 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
         officialTeamId: officialTeamId,
         eventName: row.EventName || row.eventName || '',
         members: members,
+        assignedPuzzleIndex: assignedIdx,
         puzzle: puzzleBase.puzzle,
         problemStatement: puzzleBase.problemStatement
       });
@@ -380,42 +402,88 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
   }
 });
 
-// Admin Route: Export Teams to Excel
+// Admin Route: Export Teams to PDF/Printable HTML
 app.get('/api/admin/teams/export', async (req, res) => {
   try {
-    const teams = await Team.find().lean();
+    const teams = await Team.find().lean().sort({ score: -1, jigsaw_progress: -1 });
     
-    // Map teams to exclude gameplay stats
-    const exportData = teams.map(t => {
-      const mapped = {
-        'Team Name': t.team_name,
-        'Official Team ID': t.officialTeamId,
-        'Login ID (ai_id)': t.ai_id,
-        'Password': t.password,
-        'Event Name': t.eventName
-      };
-      
-      // Flatten members
-      if (t.members && t.members.length > 0) {
-        t.members.forEach((m, i) => {
-          mapped[`Member ${i+1} Name`] = m.fullName;
-          mapped[`Member ${i+1} Role`] = m.role;
-          mapped[`Member ${i+1} RegNo`] = m.universityRegNo;
-          mapped[`Member ${i+1} Email`] = m.email;
-          mapped[`Member ${i+1} Phone`] = m.phone;
-        });
-      }
-      return mapped;
-    });
+    let rowsHtml = '';
+    if (teams.length === 0) {
+      rowsHtml = `<tr><td colspan="7" style="text-align:center;">No teams found</td></tr>`;
+    } else {
+      teams.forEach((t, i) => {
+        const members = t.members && t.members.length > 0 
+          ? t.members.map(m => `${m.fullName} (${m.agenticAiRegId || 'No AI ID'})`).join('<br/>') 
+          : 'No members';
+        rowsHtml += `
+          <tr>
+            <td style="text-align:center;">${i + 1}</td>
+            <td><strong>${t.team_name}</strong></td>
+            <td>${t.ai_id}</td>
+            <td>${t.password}</td>
+            <td>${members}</td>
+            <td style="text-align:center;"><strong>${t.score || 0}</strong></td>
+            <td style="text-align:center;">${t.qualifiedForRound2 ? 'Yes' : 'No'}</td>
+          </tr>
+        `;
+      });
+    }
 
-    const ws = xlsx.utils.json_to_sheet(exportData);
-    const wb = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(wb, ws, "Teams Results");
-    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>All Teams Results - AI SparkX</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #333; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .header h1 { color: #3b82f6; margin: 0 0 10px 0; }
+          .header p { color: #666; margin: 0; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; font-size: 14px; }
+          th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+          th { background-color: #f8fafc; color: #0f172a; font-weight: 600; }
+          tr:nth-child(even) { background-color: #f1f5f9; }
+          @media print {
+            body { padding: 0; }
+            button { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>AI SparkX - Master Teams List</h1>
+          <p>Complete list of all registered teams and their current scores</p>
+          <p style="margin-top: 10px;">
+            <button onclick="window.print()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+              Save as PDF / Print
+            </button>
+          </p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 50px; text-align:center;">S.No</th>
+              <th style="width: 20%;">Team Name</th>
+              <th>Login ID</th>
+              <th>Password</th>
+              <th style="width: 30%;">Members</th>
+              <th style="text-align:center;">Score</th>
+              <th style="text-align:center;">Qualified</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        <script>
+          // Auto-trigger print dialog after a short delay
+          setTimeout(() => { window.print(); }, 500);
+        </script>
+      </body>
+      </html>
+    `;
     
-    res.setHeader('Content-Disposition', 'attachment; filename="AI_SparkX_Teams.xlsx"');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(buffer);
+    res.send(html);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Export failed' });
   }
@@ -424,32 +492,38 @@ app.get('/api/admin/teams/export', async (req, res) => {
 // Admin Route: Export Teams for Eval
 app.get('/api/admin/teams/export-eval', async (req, res) => {
   try {
-    // Note: Can change `{ qualifiedForRound2: true }` if you want all teams instead.
-    const teams = await Team.find({ qualifiedForRound2: true }).lean().sort({ score: -1, jigsaw_progress: -1 });
+    const teams = await Team.find().lean().sort({ score: -1, jigsaw_progress: -1 });
     
-    let counter = 1;
-    const exportData = teams.map(t => {
+    // Exact structure requested by the user
+    const exportData = [
+      ['Team Name', 'Team ID', 'Members', 'Round 1 Score', 'Qualified for R2', 'Round 3 (15 M)', '', '', '', 'Total'],
+      ['', '', '', '', '', 'Body Language ( 3 M )', 'Q/A  ( 3M )', 'Design Thinking Rules  (4M)', 'Work Flow (5M)', '']
+    ];
+
+    teams.forEach((t) => {
       const gpaScore = ((t.score || 0) / 100).toFixed(2);
-      
-      return {
-        'S.No': counter++,
-        'Team Name': t.team_name,
-        'Members': t.members && t.members.length > 0 ? t.members.map(m => m.fullName).join(', ') : '',
-        'Round 1 Score (out of 10)': gpaScore,
-        'Body Language ( 3 M )': '',
-        'Q/A ( 3M )': '',
-        'Design Thinking Rules (4M)': '',
-        'Work Flow (5M)': '',
-        'Total': ''
-      };
+      exportData.push([
+        t.team_name || '',
+        t.officialTeamId || t.ai_id || '',
+        t.members && t.members.length > 0 ? t.members.map(m => m.fullName).join(', ') : '',
+        gpaScore,
+        t.qualifiedForRound2 ? 'Yes' : 'No',
+        '', '', '', '', ''
+      ]);
     });
 
-    const ws = xlsx.utils.json_to_sheet(exportData);
+    const ws = xlsx.utils.aoa_to_sheet(exportData);
+    
+    // Merge cells for 'Round 3 (15 M)' across the 4 metric columns
+    ws['!merges'] = [
+      { s: { r: 0, c: 5 }, e: { r: 0, c: 8 } } // r:0=row 1, c:5=col F, e:{r:0, c:8}=col I
+    ];
+
     const wb = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(wb, ws, "Round 3 Evaluation");
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
     
-    res.setHeader('Content-Disposition', 'attachment; filename="AI_SparkX_Evaluation_Sheet.xlsx"');
+    res.setHeader('Content-Disposition', 'attachment; filename="AI_SparkX_Eval_Sheet.xlsx"');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(buffer);
   } catch (error) {
@@ -457,32 +531,80 @@ app.get('/api/admin/teams/export-eval', async (req, res) => {
   }
 });
 
-// Admin Route: Export Qualified Teams (Simple Excel)
+// Admin Route: Export Qualified Teams (HTML Print/PDF)
 app.get('/api/admin/teams/export-qualified', async (req, res) => {
   try {
     const teams = await Team.find({ qualifiedForRound2: true }).lean().sort({ team_name: 1 });
     
-    let counter = 1;
-    let exportData = teams.map(t => {
-      return {
-        'S.No': counter++,
-        'Team Name': t.team_name,
-        'Members Details': t.members && t.members.length > 0 ? t.members.map(m => `${m.fullName} (${m.email || 'No email'})`).join(', ') : 'No members'
-      };
-    });
-    
-    if (exportData.length === 0) {
-      exportData = [{ 'S.No': '', 'Team Name': 'No qualified teams yet', 'Members Details': '' }];
+    let rowsHtml = '';
+    if (teams.length === 0) {
+      rowsHtml = `<tr><td colspan="3" style="text-align:center;">No qualified teams yet</td></tr>`;
+    } else {
+      teams.forEach((t, i) => {
+        const members = t.members && t.members.length > 0 
+          ? t.members.map(m => `${m.fullName} (${m.email || 'No email'})`).join(', ') 
+          : 'No members';
+        rowsHtml += `
+          <tr>
+            <td style="text-align:center;">${i + 1}</td>
+            <td><strong>${t.team_name}</strong></td>
+            <td>${members}</td>
+          </tr>
+        `;
+      });
     }
 
-    const ws = xlsx.utils.json_to_sheet(exportData);
-    const wb = xlsx.utils.book_new();
-    xlsx.utils.book_append_sheet(wb, ws, "Qualified Teams");
-    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Qualified Teams - AI SparkX</title>
+        <style>
+          body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; color: #333; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .header h1 { color: #10b981; margin: 0 0 10px 0; }
+          .header p { color: #666; margin: 0; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+          th { background-color: #f8fafc; color: #0f172a; font-weight: 600; }
+          tr:nth-child(even) { background-color: #f1f5f9; }
+          @media print {
+            body { padding: 0; }
+            button { display: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>AI SparkX - Qualified Teams (Round 2)</h1>
+          <p>Official list of teams qualified for the next phase</p>
+          <p style="margin-top: 10px;">
+            <button onclick="window.print()" style="padding: 10px 20px; background: #10b981; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">
+              Save as PDF / Print
+            </button>
+          </p>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 50px; text-align:center;">S.No</th>
+              <th style="width: 25%;">Team Name</th>
+              <th>Members Details</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        <script>
+          // Auto-trigger print dialog after a short delay
+          setTimeout(() => { window.print(); }, 500);
+        </script>
+      </body>
+      </html>
+    `;
     
-    res.setHeader('Content-Disposition', 'attachment; filename="AI_SparkX_Qualified_Teams.xlsx"');
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-    res.send(buffer);
+    res.send(html);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Export failed' });
   }
@@ -493,16 +615,36 @@ app.get('/api/admin/teams/export-ps', async (req, res) => {
   try {
     const teams = await Team.find().lean().sort({ team_name: 1 });
     
+    // We need to fetch the database to map indexes
+    let database = [];
+    try {
+      // Import the ES module database dynamically since server.js is an ES module
+      const dbModule = await import('./database.js');
+      database = dbModule.DEFAULT_DATABASE || [];
+    } catch (e) {
+      console.error("Could not load database for PS export", e);
+    }
+    
     let rowsHtml = '';
     if (teams.length === 0) {
       rowsHtml = `<tr><td colspan="3" style="text-align:center;">No teams found</td></tr>`;
     } else {
       teams.forEach((t, i) => {
+        let psName = 'Not Assigned';
+        if (t.assignedPuzzleIndex !== undefined && t.assignedPuzzleIndex > -1) {
+          const dbItem = database[t.assignedPuzzleIndex];
+          if (dbItem && dbItem.problemStatement) {
+            psName = dbItem.problemStatement.id + " - " + dbItem.problemStatement.title;
+          } else {
+            psName = `Assigned Index: ${t.assignedPuzzleIndex} (Not found in DB)`;
+          }
+        }
+        
         rowsHtml += `
           <tr>
-            <td>${i + 1}</td>
-            <td>${t.team_name}</td>
-            <td>${t.problemStatement ? t.problemStatement : 'Not Assigned'}</td>
+            <td style="text-align:center;">${i + 1}</td>
+            <td><strong>${t.team_name || 'N/A'}</strong></td>
+            <td>${psName}</td>
           </tr>
         `;
       });
@@ -594,6 +736,53 @@ app.post('/api/admin/teams/seed', async (req, res) => {
 });
 
 // Purge all teams
+// Admin Route: Factory Reset Progress (Keeps teams, resets all progress)
+app.post('/api/admin/system/factory-reset', async (req, res) => {
+  try {
+    // Reset SystemState
+    const state = await SystemState.findOne();
+    if (state) {
+      state.round1_active = false;
+      state.round2_active = false;
+      state.round2_endTime = null;
+      await state.save();
+    }
+
+    // Reset All Teams
+    await Team.updateMany({}, {
+      $set: {
+        status: 'ready',
+        score: 0,
+        jigsaw_progress: 0,
+        jigsaw_pieces: [],
+        startTime: null,
+        endTime: null,
+        qualifiedForRound2: false,
+        disqualified: false,
+        issueRaised: false,
+        round2StartedAt: null,
+        round2Completed: false,
+        round1_attempts: 1,
+        assignedPuzzleIndex: 0
+      }
+    });
+
+    // Resolve all alerts
+    alerts = [];
+    io.emit('state_changed', { round1_active: false });
+    io.emit('round2_state_update', { active: false, endTime: null });
+    
+    // Broadcast team updates
+    const teams = await Team.find().sort('-score');
+    io.emit('all_teams_reset', teams);
+
+    res.json({ success: true, message: 'Factory reset completed. All test data cleared. Ready for the real exam.' });
+  } catch (error) {
+    console.error('Factory reset error:', error);
+    res.status(500).json({ success: false, message: 'Failed to factory reset.' });
+  }
+});
+
 app.post('/api/admin/teams/purge', async (req, res) => {
   try {
     await Team.deleteMany({});
@@ -766,10 +955,11 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('raise_issue', ({ teamId, teamName }) => {
+  socket.on('raise_issue', ({ teamId, officialTeamId, teamName }) => {
     const alert = {
       id: Date.now().toString(),
       teamId,
+      officialTeamId,
       teamName,
       timestamp: new Date().toISOString()
     };

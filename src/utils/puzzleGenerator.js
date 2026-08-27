@@ -1,5 +1,5 @@
 // Generate 100% Unique High-Tech AI Agentic Image per Team (50 Unique Palettes & Geometries)
-export default async function generateAIAgenticImage(teamIdStr, puzzleData = null, problemStatement = null, withText = false) {
+export default async function generateAIAgenticImage(teamIdStr, puzzleData = null, problemStatement = null, withText = false, assignedIdx = 0) {
   const canvas = document.createElement('canvas');
   canvas.width = 720;
   canvas.height = 720;
@@ -31,8 +31,21 @@ export default async function generateAIAgenticImage(teamIdStr, puzzleData = nul
   const palette = palettes[(teamIdNum - 1) % palettes.length];
   const primaryColor = puzzleData?.accentColor || palette.primary;
 
-  // Map the 50 teams to 10 image files (1.jpg to 10.jpg)
-  const imageId = (teamIdNum % 10) + 1;
+  // Fetch the actual number of puzzle images available in the public/puzzles/images directory
+  let imageCount = 10;
+  try {
+    const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/system/image-count`);
+    const data = await res.json();
+    if (data && data.count > 0) {
+      imageCount = data.count;
+    }
+  } catch (e) {
+    console.warn("Could not fetch image count, defaulting to 10", e);
+  }
+
+  // Map the puzzle to available images using assignedIdx (which is randomly assigned to the team)
+  // This ensures the image choice is fully random from the available files, but consistent for the same puzzle.
+  const imageId = (assignedIdx % imageCount) + 1;
   const imagePath = `/puzzles/images/${imageId}.jpg`;
 
   try {

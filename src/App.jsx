@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-
 import IntroAnimation from './components/IntroAnimation';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminLogin from './components/Admin/AdminLogin';
+import AddTeamPage from './components/Admin/AddTeamPage';
 import LandingPage from './components/Flow/LandingPage';
 import Login from './components/Flow/Login';
 import RoundInstructions from './components/Flow/RoundInstructions';
@@ -19,6 +20,16 @@ function App() {
   const [hasSeenIntro, setHasSeenIntro] = useState(() => sessionStorage.getItem('introSeen') === 'true');
   const navigate = useNavigate();
   const location = useLocation();
+
+  useEffect(() => {
+    const handleContextMenu = (e) => {
+      e.preventDefault();
+    };
+    document.addEventListener('contextmenu', handleContextMenu);
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+    };
+  }, []);
 
   useEffect(() => {
     // Check admin token expiry (1 hour = 3600000 ms)
@@ -100,8 +111,10 @@ function App() {
         } />
         
         <Route path="/adminsparkx1" element={
-          adminAuthenticated ? <AdminDashboard /> : <AdminLogin onAuthSuccess={() => setAdminAuthenticated(true)} />
+          adminAuthenticated ? <Navigate to="/admin/dashboard" replace /> : <AdminLogin onAuthSuccess={() => setAdminAuthenticated(true)} />
         } />
+        <Route path="/admin/dashboard" element={adminAuthenticated ? <AdminDashboard /> : <Navigate to="/adminsparkx1" />} />
+        <Route path="/admin/add-team" element={adminAuthenticated ? <AddTeamPage /> : <Navigate to="/adminsparkx1" />} />
 
         {/* PROTECTED ROUTES */}
         <Route path="/instructions" element={

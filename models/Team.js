@@ -2,7 +2,6 @@ import mongoose from 'mongoose';
 
 const memberSchema = new mongoose.Schema({
   fullName: String,
-  role: String,
   agenticAiRegId: String,
   universityRegNo: String,
   yearOfStudy: String,

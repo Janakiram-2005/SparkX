@@ -58,6 +58,12 @@ const IntroAnimation = ({ onComplete }) => {
         onEnded={onComplete}
         style={styles.video}
       />
+      
+      {/* Visual Unmute Hint */}
+      <div style={styles.unmuteHint}>
+        <i className="fa-solid fa-volume-xmark" style={{ marginRight: '8px' }}></i> 
+        CLICK ANYWHERE TO UNMUTE AUDIO
+      </div>
     </div>
   );
 };
@@ -68,14 +74,31 @@ const styles = {
     height: '100vh',
     backgroundColor: '#000',
     overflow: 'hidden',
+    position: 'relative',
     display: 'flex',
     justifyContent: 'center',
-    alignItems: 'center'
+    alignItems: 'center',
+    cursor: 'pointer'
   },
   video: {
     width: '100%',
     height: '100%',
     objectFit: 'cover'
+  },
+  unmuteHint: {
+    position: 'absolute',
+    bottom: '40px',
+    left: '50%',
+    transform: 'translateX(-50%)',
+    background: 'rgba(0, 0, 0, 0.6)',
+    color: 'rgba(255, 255, 255, 0.7)',
+    padding: '10px 20px',
+    borderRadius: '20px',
+    fontFamily: '"Space Grotesk", sans-serif',
+    fontSize: '14px',
+    letterSpacing: '2px',
+    pointerEvents: 'none',
+    animation: 'pulse 2s infinite'
   }
 };
 

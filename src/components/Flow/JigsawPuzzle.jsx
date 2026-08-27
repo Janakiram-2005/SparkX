@@ -49,6 +49,12 @@ const JigsawPuzzle = ({ team, onComplete }) => {
     // Save to DB if it was newly generated
     if(team.assignedPuzzleIndex === undefined || team.assignedPuzzleIndex === -1) {
       newSocket.emit('assign_puzzle', { teamId: team.id || team._id, index: assignedIdx });
+      // Update local storage so Round 2 can read it!
+      const session = JSON.parse(localStorage.getItem('sparkx_session') || '{}');
+      if (session.team) {
+        session.team.assignedPuzzleIndex = assignedIdx;
+        localStorage.setItem('sparkx_session', JSON.stringify(session));
+      }
     }
 
     const problemStatement = DEFAULT_DATABASE[assignedIdx].problemStatement;
@@ -56,8 +62,8 @@ const JigsawPuzzle = ({ team, onComplete }) => {
     // Generate two canvases: one for pieces (no text) and one for reference/flip (with text)
     const generatePuzzles = async () => {
       try {
-        const masterCanvas = await generateAIAgenticImage(team.id || team._id, assignedData, problemStatement, false);
-        const masterCanvasRef = await generateAIAgenticImage(team.id || team._id, assignedData, problemStatement, true);
+        const masterCanvas = await generateAIAgenticImage(team.id || team._id, assignedData, problemStatement, false, assignedIdx);
+        const masterCanvasRef = await generateAIAgenticImage(team.id || team._id, assignedData, problemStatement, true, assignedIdx);
         
         setTargetDataUrl(masterCanvasRef.toDataURL('image/png'));
         setTargetDataUrlNoText(masterCanvas.toDataURL('image/png'));
@@ -238,7 +244,7 @@ const JigsawPuzzle = ({ team, onComplete }) => {
 
   const handleRaiseIssue = () => {
     if (socket && !issueRaised) {
-      socket.emit('raise_issue', { teamId: team.id || team._id, teamName: team.team_name || `Team ${team.id || team._id}` });
+      socket.emit('raise_issue', { teamId: team.id || team._id, officialTeamId: team.officialTeamId || 'N/A', teamName: team.team_name || `Team ${team.id || team._id}` });
       setIssueRaised(true);
       setTimeout(() => setIssueRaised(false), 10000); // 10s cooldown
     }

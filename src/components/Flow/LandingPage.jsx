@@ -313,9 +313,9 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
         </main>
 
         <footer id="contact" style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'flex-end', 
+          display: 'grid', 
+          gridTemplateColumns: '1fr auto auto', 
+          gap: '2rem',
           padding: '4rem 2rem', 
           borderTop: '1px solid rgba(255,255,255,0.1)',
           marginTop: '4rem'
@@ -328,15 +328,38 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
             </div>
           </div>
 
-          <div className="footer-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
-            <div className="contacts" style={{ display: 'flex', gap: '2rem', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px' }}>
+          <div className="footer-faculty">
+            <h4 style={{ margin: '0 0 1rem 0', color: '#94a3b8', fontSize: '0.8rem', textTransform: 'uppercase' }}>Faculty Coordinators</h4>
+            <div className="contacts" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px' }}>
               <div>
-                <strong style={{ display: 'block', marginbottom: '0.25rem' }}>Mrs. Sk. Nazeema</strong>
+                <strong style={{ display: 'block', marginBottom: '0.25rem', color: 'white' }}>Mrs. Sk. Nazeema</strong>
                 <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>+91 96188 96300</span>
               </div>
               <div>
-                <strong style={{ display: 'block', marginbottom: '0.25rem' }}>Ms. G. Tejaswi</strong>
+                <strong style={{ display: 'block', marginBottom: '0.25rem', color: 'white' }}>Ms. G. Tejaswi</strong>
                 <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>+91 93980 46056</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="footer-students">
+            <h4 style={{ margin: '0 0 1rem 0', color: '#94a3b8', fontSize: '0.8rem', textTransform: 'uppercase' }}>Student Coordinators</h4>
+            <div className="contacts" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px' }}>
+              <div>
+                <strong style={{ display: 'block', marginBottom: '0.25rem', color: 'white' }}>Aparna (student):</strong>
+                <span style={{ color: '#fbbf24', fontFamily: 'monospace', fontSize: '1.1rem', borderBottom: '1px solid #fbbf24', paddingBottom: '2px' }}>+91 85238 13227</span>
+              </div>
+              <div>
+                <strong style={{ display: 'block', marginBottom: '0.25rem', color: 'white' }}>Dileep (student):</strong>
+                <span style={{ color: '#fbbf24', fontFamily: 'monospace', fontSize: '1.1rem', borderBottom: '1px solid #fbbf24', paddingBottom: '2px' }}>+91 93939 040030</span>
+              </div>
+              <div>
+                <strong style={{ display: 'block', marginBottom: '0.25rem', color: 'white' }}>Janaki Ram(student):</strong>
+                <span style={{ color: '#fbbf24', fontFamily: 'monospace', fontSize: '1.1rem', borderBottom: '1px solid #fbbf24', paddingBottom: '2px' }}>+91 91820 40905</span>
+              </div>
+              <div>
+                <strong style={{ display: 'block', marginBottom: '0.25rem', color: 'white' }}>Shanmukha Pavan (student):</strong>
+                <span style={{ color: '#fbbf24', fontFamily: 'monospace', fontSize: '1.1rem', borderBottom: '1px solid #fbbf24', paddingBottom: '2px' }}>+91 98499 80887</span>
               </div>
             </div>
           </div>
