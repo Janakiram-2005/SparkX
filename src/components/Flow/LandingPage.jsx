@@ -157,7 +157,7 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
           left: '50%',
           transform: 'translateX(-50%)',
           width: '80%',
-          opacity: 0.05,
+          opacity: 0.15,
           zIndex: 0,
           pointerEvents: 'none'
         }}
@@ -331,11 +331,11 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
           <div className="footer-right" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '1rem' }}>
             <div className="contacts" style={{ display: 'flex', gap: '2rem', border: '1px solid rgba(255,255,255,0.1)', padding: '1rem', borderRadius: '8px' }}>
               <div>
-                <strong style={{ display: 'block', marginBottom: '0.25rem' }}>Mrs. Sk. Nazeema</strong>
+                <strong style={{ display: 'block', marginbottom: '0.25rem' }}>Mrs. Sk. Nazeema</strong>
                 <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>+91 96188 96300</span>
               </div>
               <div>
-                <strong style={{ display: 'block', marginBottom: '0.25rem' }}>Ms. G. Tejaswi</strong>
+                <strong style={{ display: 'block', marginbottom: '0.25rem' }}>Ms. G. Tejaswi</strong>
                 <span style={{ color: '#94a3b8', fontFamily: 'monospace' }}>+91 93980 46056</span>
               </div>
             </div>

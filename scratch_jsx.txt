@@ -1,0 +1,256 @@
+
+
+<nav className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 bg-white/5 dark:bg-white/5 backdrop-blur-[30px] border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
+<div className="flex items-center gap-4">
+<span className="font-display-lg text-headline-md tracking-tighter text-primary dark:text-primary drop-shadow-[0_0_10px_rgba(221,183,255,0.3)]">Ai SparkX Admin</span>
+</div>
+<div className="hidden md:flex items-center gap-8">
+<div className="flex items-center gap-2 glass-panel px-4 py-2 rounded-full border-t border-white/20">
+<span className="material-symbols-outlined text-tertiary animate-pulse" style="font-variation-settings: 'FILL' 1;">radio_button_checked</span>
+<span className="font-label-caps text-label-caps text-on-surface">Live Status: Round 1 ACTIVE</span>
+</div>
+</div>
+<div className="flex items-center gap-4">
+<button className="p-2 text-on-surface-variant hover:text-primary hover:bg-white/10 rounded-full transition-all duration-300">
+<span className="material-symbols-outlined">sensors</span>
+</button>
+<button className="p-2 text-on-surface-variant hover:text-primary hover:bg-white/10 rounded-full transition-all duration-300">
+<span className="material-symbols-outlined">notifications</span>
+</button>
+<button className="p-2 text-on-surface-variant hover:text-primary hover:bg-white/10 rounded-full transition-all duration-300">
+<span className="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</nav>
+
+<aside className="hidden md:flex flex-col fixed left-0 top-0 h-full pt-20 pb-8 z-40 bg-white/3 dark:bg-white/3 backdrop-blur-[40px] docked left-0 h-full w-64 border-r border-white/10 shadow-2xl transition-all duration-200 ease-in-out">
+<div className="px-6 py-8 border-b border-white/10">
+<div className="flex items-center gap-4 mb-2">
+<div className="w-10 h-10 rounded-full bg-surface-container-high border border-white/20 flex items-center justify-center overflow-hidden">
+<img className="object-cover w-full h-full" data-alt="A stylized, glowing avatar placeholder suitable for a high-tech admin interface. The avatar should feature a neon-accented cybernetic profile set against a deep, dark cosmic background, using an intense palette of electric blues and purples. It conveys advanced superuser status in a futuristic setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYtK2rv3N1PeckaidD761ZnbOs-NrTO58zoPKtOMEq_Yb6Q-iAk4uLkLb5fCBnkIRs910nhZyg9xNX1rwsgfPmZ7pD4Sn-x8rJYjfTYgXc0etKKqxe5VPaLalzR9dKoMq5m3f5xa2nnnfVK-WikgsyKN6Aj6FrNdeUmRba3wC-z_dywYTmTZ4cI0Lmx1Tu--pQQzx_Udm1St9cigpDa_-ijTB7iBqQO5PlNb_veQiH8JN6mPhFf_hh_DjwXv2MnzmdPbchCHzj5yk"/>
+</div>
+<div>
+<h3 className="font-headline-md text-body-md text-on-surface font-semibold">Admin Core</h3>
+<p className="font-label-caps text-label-caps text-tertiary">Superuser Access</p>
+</div>
+</div>
+</div>
+<nav className="flex-1 py-6 overflow-y-auto custom-scrollbar">
+<ul className="space-y-2">
+<li>
+<a className="bg-white/10 text-primary border-r-4 border-primary px-6 py-3 flex items-center gap-3 transition-colors" href="#">
+<span className="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span className="font-body-md text-body-md font-medium">Dashboard</span>
+</a>
+</li>
+<li>
+<div className="px-6 py-2 mt-4 mb-2">
+<span className="font-label-caps text-[10px] tracking-widest text-on-surface-variant uppercase opacity-70">Database</span>
+</div>
+<a className="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span className="material-symbols-outlined">upload_file</span>
+<span className="font-body-md text-body-md">Upload Excel</span>
+</a>
+<a className="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span className="material-symbols-outlined">database</span>
+<span className="font-body-md text-body-md">Seed DB</span>
+</a>
+<a className="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-error/10 hover:text-error transition-colors" href="#">
+<span className="material-symbols-outlined text-error">delete_forever</span>
+<span className="font-body-md text-body-md text-error">Purge Data</span>
+</a>
+</li>
+<li>
+<div className="px-6 py-2 mt-4 mb-2">
+<span className="font-label-caps text-[10px] tracking-widest text-on-surface-variant uppercase opacity-70">Round Control</span>
+</div>
+<a className="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span className="material-symbols-outlined">rocket_launch</span>
+<span className="font-body-md text-body-md">Start Round</span>
+</a>
+<a className="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span className="material-symbols-outlined">lock</span>
+<span className="font-body-md text-body-md">Lock Input</span>
+</a>
+</li>
+<li>
+<div className="px-6 py-2 mt-4 mb-2">
+<span className="font-label-caps text-[10px] tracking-widest text-on-surface-variant uppercase opacity-70">Data</span>
+</div>
+<a className="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span className="material-symbols-outlined">download</span>
+<span className="font-body-md text-body-md">Export</span>
+</a>
+<a className="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span className="material-symbols-outlined">terminal</span>
+<span className="font-body-md text-body-md">System Logs</span>
+</a>
+</li>
+</ul>
+</nav>
+<div className="mt-auto pt-4 border-t border-white/10">
+<ul className="space-y-1">
+<li>
+<a className="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span className="material-symbols-outlined">settings</span>
+<span className="font-body-md text-body-md">Settings</span>
+</a>
+</li>
+<li>
+<a className="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span className="material-symbols-outlined">help</span>
+<span className="font-body-md text-body-md">Support</span>
+</a>
+</li>
+</ul>
+</div>
+</aside>
+
+<main className="flex-1 w-full md:pl-64 pt-24 min-h-screen flex flex-col p-margin-mobile md:p-margin-desktop gap-8">
+
+<section className="glass-panel rounded-xl p-6 md:p-8 flex-1 flex flex-col overflow-hidden relative shadow-[0_4px_30px_rgba(0,0,0,0.2)]">
+
+<div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
+<div className="absolute bottom-0 left-0 w-48 h-48 bg-secondary/5 rounded-full blur-[60px] -z-10 pointer-events-none"></div>
+<div className="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
+<div>
+<h1 className="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-2 neon-text-primary">Global Leaderboard</h1>
+<p className="font-body-md text-body-md text-on-surface-variant">Real-time performance metrics across all active AI models.</p>
+</div>
+<div className="hidden sm:flex gap-3">
+<button className="glass-panel hover:bg-white/10 px-4 py-2 rounded-lg text-on-surface font-body-md text-body-md flex items-center gap-2 transition-all">
+<span className="material-symbols-outlined text-[18px]">filter_list</span>
+                        Filter
+                    </button>
+<button className="bg-gradient-to-r from-primary-container to-secondary-container hover:from-primary hover:to-secondary text-white px-4 py-2 rounded-lg font-body-md text-body-md font-medium neon-glow-primary transition-all">
+                        Refresh Data
+                    </button>
+</div>
+</div>
+
+<div className="overflow-x-auto flex-1">
+<table className="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr className="border-b border-white/10 text-on-surface-variant font-label-caps text-label-caps tracking-widest uppercase">
+<th className="py-4 px-4 font-medium w-1/4">Team Name</th>
+<th className="py-4 px-4 font-medium w-[15%]">AI ID</th>
+<th className="py-4 px-4 font-medium w-[15%]">Status</th>
+<th className="py-4 px-4 font-medium w-1/4">Processing Load</th>
+<th className="py-4 px-4 font-medium w-[10%] text-right">Score</th>
+<th className="py-4 px-4 font-medium w-[10%] text-center">Actions</th>
+</tr>
+</thead>
+<tbody className="font-body-md text-body-md text-on-surface divide-y divide-white/5">
+
+<tr className="hover:bg-white/5 transition-colors group">
+<td className="py-4 px-4">
+<div className="flex items-center gap-3">
+<div className="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary font-bold">N</div>
+<span className="font-semibold text-primary-fixed">Nebula Core</span>
+</div>
+</td>
+<td className="py-4 px-4 font-label-caps text-label-caps text-on-surface-variant">#AX-9921</td>
+<td className="py-4 px-4">
+<span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary/10 text-tertiary font-label-caps text-[10px] border border-tertiary/20">
+<span className="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse shadow-[0_0_5px_theme('colors.tertiary')]"></span>
+                                    COMPUTING
+                                </span>
+</td>
+<td className="py-4 px-4">
+<div className="w-full bg-black/20 rounded-full h-1.5 border border-white/10 overflow-hidden">
+<div className="bg-gradient-to-r from-primary to-tertiary h-1.5 rounded-full progress-indicator relative" style="width: 85%">
+<div className="absolute top-0 right-0 bottom-0 w-4 bg-white/50 blur-[2px]"></div>
+</div>
+</div>
+</td>
+<td className="py-4 px-4 text-right font-label-caps text-label-caps text-primary text-[14px]">
+                                9,420
+                            </td>
+<td className="py-4 px-4">
+<div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button className="p-1.5 text-on-surface-variant hover:text-secondary hover:bg-secondary/10 rounded transition-colors" title="Edit">
+<span className="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors" title="Disqualify">
+<span className="material-symbols-outlined text-[18px]">block</span>
+</button>
+</div>
+</td>
+</tr>
+
+<tr className="hover:bg-white/5 transition-colors group">
+<td className="py-4 px-4">
+<div className="flex items-center gap-3">
+<div className="w-8 h-8 rounded bg-secondary/20 flex items-center justify-center text-secondary font-bold">Q</div>
+<span className="font-semibold">Quantum Shift</span>
+</div>
+</td>
+<td className="py-4 px-4 font-label-caps text-label-caps text-on-surface-variant">#AX-8843</td>
+<td className="py-4 px-4">
+<span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-label-caps text-[10px] border border-primary/20">
+<span className="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_5px_theme('colors.primary')]"></span>
+                                    STANDBY
+                                </span>
+</td>
+<td className="py-4 px-4">
+<div className="w-full bg-black/20 rounded-full h-1.5 border border-white/10 overflow-hidden">
+<div className="bg-gradient-to-r from-primary to-secondary h-1.5 rounded-full relative" style="width: 45%"></div>
+</div>
+</td>
+<td className="py-4 px-4 text-right font-label-caps text-label-caps text-on-surface text-[14px]">
+                                7,105
+                            </td>
+<td className="py-4 px-4">
+<div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button className="p-1.5 text-on-surface-variant hover:text-secondary hover:bg-secondary/10 rounded transition-colors" title="Edit">
+<span className="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button className="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors" title="Disqualify">
+<span className="material-symbols-outlined text-[18px]">block</span>
+</button>
+</div>
+</td>
+</tr>
+
+<tr className="hover:bg-white/5 transition-colors group">
+<td className="py-4 px-4">
+<div className="flex items-center gap-3">
+<div className="w-8 h-8 rounded bg-error/20 flex items-center justify-center text-error font-bold">V</div>
+<span className="font-semibold text-on-surface-variant">Void Seekers</span>
+</div>
+</td>
+<td className="py-4 px-4 font-label-caps text-label-caps text-on-surface-variant">#AX-1022</td>
+<td className="py-4 px-4">
+<span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error/10 text-error font-label-caps text-[10px] border border-error/20">
+<span className="w-1.5 h-1.5 rounded-full bg-error shadow-[0_0_5px_theme('colors.error')]"></span>
+                                    HALTED
+                                </span>
+</td>
+<td className="py-4 px-4">
+<div className="w-full bg-black/20 rounded-full h-1.5 border border-white/10 overflow-hidden">
+<div className="bg-error h-1.5 rounded-full relative" style="width: 12%"></div>
+</div>
+</td>
+<td className="py-4 px-4 text-right font-label-caps text-label-caps text-on-surface-variant text-[14px]">
+                                1,200
+                            </td>
+<td className="py-4 px-4">
+<div className="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button className="p-1.5 text-on-surface-variant hover:text-tertiary hover:bg-tertiary/10 rounded transition-colors" title="Restart">
+<span className="material-symbols-outlined text-[18px]">restart_alt</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div className="mt-6 flex justify-between items-center text-on-surface-variant font-label-caps text-label-caps border-t border-white/10 pt-4">
+<span>Showing 1-3 of 24 Teams</span>
+<div className="flex gap-2">
+<button className="p-1 hover:text-primary transition-colors disabled:opacity-50"><span className="material-symbols-outlined">chevron_left</span></button>
+<button className="p-1 hover:text-primary transition-colors"><span className="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+</section>
+</main>

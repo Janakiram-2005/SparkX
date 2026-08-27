@@ -9,6 +9,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import crypto from 'crypto';
+import rateLimit from 'express-rate-limit';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -19,6 +20,8 @@ dotenv.config();
 import Team from './models/Team.js';
 import SystemState from './models/SystemState.js';
 import Feedback from './models/Feedback.js';
+
+const teamAlerts = []; // Store active issues { id, teamId, teamName, timestamp }
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -33,6 +36,16 @@ const io = new Server(server, {
 
 app.use(cors());
 app.use(express.json());
+
+const apiLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 minutes
+  max: 500, // limit each IP to 500 requests per windowMs
+  message: { success: false, message: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+app.use('/api', apiLimiter);
 
 // === MONGODB CONNECTION ===
 const MONGO_URI = process.env.MONGO_URI;
@@ -57,8 +70,19 @@ app.get('/api/health', (req, res) => {
 app.post('/api/auth/login', async (req, res) => {
   const { ai_id, password } = req.body;
   try {
-    const team = await Team.findOne({ ai_id, password }).select('_id team_name ai_id status');
+    const team = await Team.findOne({ ai_id, password }).select('_id team_name ai_id status disqualified qualifiedForRound2');
     if (team) {
+      if (team.disqualified) {
+        return res.json({ success: false, message: 'Your team has been disqualified.' });
+      }
+
+      const state = await SystemState.findOne();
+      const isRound2Active = state ? state.round2_active : false;
+
+      if (isRound2Active && !team.qualifiedForRound2) {
+        return res.json({ success: false, message: 'You are not qualified for Round 2.' });
+      }
+
       // Generate session token
       const sessionToken = crypto.randomBytes(32).toString('hex');
       team.sessionToken = sessionToken;
@@ -68,7 +92,7 @@ app.post('/api/auth/login', async (req, res) => {
       const teamObj = team.toObject();
       teamObj.id = teamObj._id; 
       teamObj.sessionToken = sessionToken; // send to frontend
-      res.json({ success: true, team: teamObj });
+      res.json({ success: true, team: teamObj, isRound2: isRound2Active });
     } else {
       res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
@@ -84,12 +108,23 @@ app.post('/api/auth/verify', async (req, res) => {
     if (!ai_id || !sessionToken) {
       return res.status(401).json({ success: false, message: 'Missing credentials' });
     }
-    const team = await Team.findOne({ ai_id, sessionToken }).select('_id team_name ai_id status disqualified');
+    const team = await Team.findOne({ ai_id, sessionToken }).select('_id team_name ai_id status disqualified qualifiedForRound2');
     if (team) {
+      if (team.disqualified) {
+        return res.json({ success: false, message: 'Your team has been disqualified.' });
+      }
+
+      const state = await SystemState.findOne();
+      const isRound2Active = state ? state.round2_active : false;
+
+      if (isRound2Active && !team.qualifiedForRound2) {
+        return res.json({ success: false, message: 'You are not qualified for Round 2.' });
+      }
+
       const teamObj = team.toObject();
       teamObj.id = teamObj._id;
       teamObj.sessionToken = sessionToken;
-      res.json({ success: true, team: teamObj });
+      res.json({ success: true, team: teamObj, isRound2: isRound2Active });
     } else {
       res.status(401).json({ success: false, message: 'Invalid or expired session' });
     }
@@ -233,6 +268,18 @@ app.get('/api/admin/teams', async (req, res) => {
   }
 });
 
+// Public Route: Leaderboard
+app.get('/api/leaderboard', async (req, res) => {
+  try {
+    const teams = await Team.find({ disqualified: false })
+      .select('team_name score jigsaw_progress status')
+      .sort({ score: -1, jigsaw_progress: -1 });
+    res.json({ success: true, teams });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
 // Admin Route: Targeted Team Reset
 app.post('/api/admin/teams/reset/:id', async (req, res) => {
   const teamId = req.params.id;
@@ -267,9 +314,9 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
     
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
-      const teamName = row.TeamName || row.team_name || row['Team Name'] || `Team ${i+1}`;
-      const officialTeamId = row.OfficialTeamId || row.officialTeamId || row['Official Team ID'] || '';
-      const aiId = String(row.AI_ID || row.ai_id || row['Login ID'] || i + 1);
+      const teamName = row.TeamName || row.team_name || row['Team Name'] || row.Name || `Team ${i+1}`;
+      const officialTeamId = row.OfficialTeamId || row.officialTeamId || row['Official Team ID'] || row['Registration Number'] || '';
+      const aiId = String(row.AI_ID || row.ai_id || row['Login ID'] || row['VUCSE ID'] || i + 1);
       const password = row.Password || row.password || `AIX${Math.floor(100 + Math.random() * 900)}`;
 
       // Check if duplicate
@@ -287,15 +334,25 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
 
       // Extract members if present in Excel (e.g., Member 1 Name, Member 1 Role, etc.)
       const members = [];
-      for (let m = 1; m <= 3; m++) {
-        if (row[`Member ${m} Name`]) {
-          members.push({
-            fullName: row[`Member ${m} Name`],
-            role: row[`Member ${m} Role`] || '',
-            universityRegNo: row[`Member ${m} RegNo`] || '',
-            email: row[`Member ${m} Email`] || '',
-            phone: row[`Member ${m} Phone`] || ''
-          });
+      if (row.Name && !row['Member 1 Name']) {
+        members.push({
+          fullName: row.Name,
+          universityRegNo: row['Registration Number'] || '',
+          phone: row.Phone || '',
+          email: row.Email || '',
+          role: 'Participant'
+        });
+      } else {
+        for (let m = 1; m <= 3; m++) {
+          if (row[`Member ${m} Name`]) {
+            members.push({
+              fullName: row[`Member ${m} Name`],
+              role: row[`Member ${m} Role`] || '',
+              universityRegNo: row[`Member ${m} RegNo`] || '',
+              email: row[`Member ${m} Email`] || '',
+              phone: row[`Member ${m} Phone`] || ''
+            });
+          }
         }
       }
 
@@ -359,6 +416,143 @@ app.get('/api/admin/teams/export', async (req, res) => {
     res.setHeader('Content-Disposition', 'attachment; filename="AI_SparkX_Teams.xlsx"');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(buffer);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Export failed' });
+  }
+});
+
+// Admin Route: Export Teams for Eval
+app.get('/api/admin/teams/export-eval', async (req, res) => {
+  try {
+    // Note: Can change `{ qualifiedForRound2: true }` if you want all teams instead.
+    const teams = await Team.find({ qualifiedForRound2: true }).lean().sort({ score: -1, jigsaw_progress: -1 });
+    
+    let counter = 1;
+    const exportData = teams.map(t => {
+      const gpaScore = ((t.score || 0) / 100).toFixed(2);
+      
+      return {
+        'S.No': counter++,
+        'Team Name': t.team_name,
+        'Members': t.members && t.members.length > 0 ? t.members.map(m => m.fullName).join(', ') : '',
+        'Round 1 Score (out of 10)': gpaScore,
+        'Body Language ( 3 M )': '',
+        'Q/A ( 3M )': '',
+        'Design Thinking Rules (4M)': '',
+        'Work Flow (5M)': '',
+        'Total': ''
+      };
+    });
+
+    const ws = xlsx.utils.json_to_sheet(exportData);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, "Round 3 Evaluation");
+    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    
+    res.setHeader('Content-Disposition', 'attachment; filename="AI_SparkX_Evaluation_Sheet.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Export failed' });
+  }
+});
+
+// Admin Route: Export Qualified Teams (Simple Excel)
+app.get('/api/admin/teams/export-qualified', async (req, res) => {
+  try {
+    const teams = await Team.find({ qualifiedForRound2: true }).lean().sort({ team_name: 1 });
+    
+    let counter = 1;
+    let exportData = teams.map(t => {
+      return {
+        'S.No': counter++,
+        'Team Name': t.team_name,
+        'Members Details': t.members && t.members.length > 0 ? t.members.map(m => `${m.fullName} (${m.email || 'No email'})`).join(', ') : 'No members'
+      };
+    });
+    
+    if (exportData.length === 0) {
+      exportData = [{ 'S.No': '', 'Team Name': 'No qualified teams yet', 'Members Details': '' }];
+    }
+
+    const ws = xlsx.utils.json_to_sheet(exportData);
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, "Qualified Teams");
+    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+    
+    res.setHeader('Content-Disposition', 'attachment; filename="AI_SparkX_Qualified_Teams.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Export failed' });
+  }
+});
+
+// Admin Route: Export Problem Statement Allocation (HTML Print/PDF)
+app.get('/api/admin/teams/export-ps', async (req, res) => {
+  try {
+    const teams = await Team.find().lean().sort({ team_name: 1 });
+    
+    let rowsHtml = '';
+    if (teams.length === 0) {
+      rowsHtml = `<tr><td colspan="3" style="text-align:center;">No teams found</td></tr>`;
+    } else {
+      teams.forEach((t, i) => {
+        rowsHtml += `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${t.team_name}</td>
+            <td>${t.problemStatement ? t.problemStatement : 'Not Assigned'}</td>
+          </tr>
+        `;
+      });
+    }
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Problem Statement Allocation</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
+          h1 { text-align: center; color: #1e293b; }
+          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          th, td { border: 1px solid #cbd5e1; padding: 12px; text-align: left; }
+          th { background-color: #f1f5f9; font-weight: bold; }
+          @media print {
+            button { display: none; }
+            body { padding: 0; }
+          }
+        </style>
+      </head>
+      <body>
+        <div style="text-align: right; margin-bottom: 20px;">
+          <button onclick="window.print()" style="padding: 10px 20px; background: #3b82f6; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+            Save as PDF / Print
+          </button>
+        </div>
+        <h1>AI SparkX - Problem Statement Allocation</h1>
+        <table>
+          <thead>
+            <tr>
+              <th style="width: 10%;">S.No</th>
+              <th style="width: 30%;">Team Name</th>
+              <th style="width: 60%;">Allocated Problem Statement</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+        <script>
+          window.onload = function() { window.print(); }
+        </script>
+      </body>
+      </html>
+    `;
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
   } catch (error) {
     res.status(500).json({ success: false, message: 'Export failed' });
   }
@@ -500,6 +694,11 @@ app.get('/api/state', async (req, res) => {
   }
 });
 
+// Admin Route: Get Alerts
+app.get('/api/admin/alerts', (req, res) => {
+  res.json({ success: true, alerts: teamAlerts });
+});
+
 
 // === WEBSOCKETS (SOCKET.IO) ===
 io.on('connection', (socket) => {
@@ -511,6 +710,10 @@ io.on('connection', (socket) => {
 
   socket.on('join_admin', () => {
     socket.join('admin_room');
+  });
+
+  socket.on('join_leaderboard', () => {
+    socket.join('leaderboard_room');
   });
 
   socket.on('assign_puzzle', async ({ teamId, index }) => {
@@ -527,6 +730,7 @@ io.on('connection', (socket) => {
     
     try {
       await Team.findByIdAndUpdate(teamId, { jigsaw_progress: progress });
+      io.to('leaderboard_room').emit('refresh_leaderboard');
     } catch (err) {
       console.error('Failed to save progress', err);
     }
@@ -538,17 +742,19 @@ io.on('connection', (socket) => {
     try {
       await Team.findByIdAndUpdate(teamId, { status: 'completed', score: score });
       io.to('admin_room').emit('team_completed', { teamId, score });
+      io.to('leaderboard_room').emit('refresh_leaderboard');
     } catch (err) {
       console.error(err);
     }
   });
 
   socket.on('tab_switch_violation', async ({ teamId }) => {
+    if (teamId === '1') return; // Ignore DB ops for dummy login
     try {
       const team = await Team.findById(teamId);
       if (team) {
         team.tabSwitchCount += 1;
-        if (team.tabSwitchCount >= 3) {
+        if (team.tabSwitchCount >= 5) {
           team.disqualified = true;
           io.to(`team_${teamId}`).emit('disqualified');
         }
@@ -557,6 +763,25 @@ io.on('connection', (socket) => {
       }
     } catch (e) {
       console.error('Tab switch update error:', e);
+    }
+  });
+
+  socket.on('raise_issue', ({ teamId, teamName }) => {
+    const alert = {
+      id: Date.now().toString(),
+      teamId,
+      teamName,
+      timestamp: new Date().toISOString()
+    };
+    teamAlerts.push(alert);
+    io.to('admin_room').emit('new_alert', alert);
+  });
+
+  socket.on('resolve_alert', ({ alertId }) => {
+    const index = teamAlerts.findIndex(a => a.id === alertId);
+    if (index !== -1) {
+      teamAlerts.splice(index, 1);
+      io.to('admin_room').emit('alert_resolved', { alertId });
     }
   });
 

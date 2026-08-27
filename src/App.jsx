@@ -10,6 +10,8 @@ import JigsawPuzzle from './components/Flow/JigsawPuzzle';
 import ResultsReveal from './components/Flow/ResultsReveal';
 import FeedbackForm from './components/Flow/FeedbackForm';
 import RoundTwo from './components/Flow/RoundTwo';
+import Leaderboard from './components/Flow/Leaderboard';
+
 function App() {
   const [adminAuthenticated, setAdminAuthenticated] = useState(false);
   const [team, setTeam] = useState(null);
@@ -19,6 +21,16 @@ function App() {
   const location = useLocation();
 
   useEffect(() => {
+    // Check admin token expiry (1 hour = 3600000 ms)
+    const adminToken = sessionStorage.getItem('adminToken');
+    if (adminToken) {
+      if (Date.now() - parseInt(adminToken) < 3600000) {
+        setAdminAuthenticated(true);
+      } else {
+        sessionStorage.removeItem('adminToken');
+      }
+    }
+
     const verifySession = async () => {
       const sessionData = localStorage.getItem('sparkx_session');
       if (sessionData) {
@@ -32,6 +44,9 @@ function App() {
           const data = await res.json();
           if (data.success && !data.team.disqualified) {
             setTeam(data.team);
+            if (data.isRound2 && window.location.pathname !== '/round2' && window.location.pathname !== '/adminsparkx1') {
+              navigate('/round2');
+            }
           } else {
             localStorage.removeItem('sparkx_session');
           }
@@ -71,10 +86,16 @@ function App() {
           }} />
         } />
 
+        <Route path="/leaderboard" element={<Leaderboard />} />
+
         <Route path="/login" element={
-          <Login onLoginSuccess={(t) => {
+          <Login onLoginSuccess={(t, isRound2) => {
             setTeam(t);
-            navigate('/instructions');
+            if (isRound2) {
+              navigate('/round2');
+            } else {
+              navigate('/instructions');
+            }
           }} />
         } />
         
@@ -84,7 +105,7 @@ function App() {
 
         {/* PROTECTED ROUTES */}
         <Route path="/instructions" element={
-          team ? <RoundInstructions onStartExam={() => navigate('/puzzle')} /> : <Navigate to="/login" replace />
+          team ? <RoundInstructions team={team} onStartExam={() => navigate('/puzzle')} /> : <Navigate to="/login" replace />
         } />
 
         <Route path="/puzzle" element={
@@ -101,6 +122,16 @@ function App() {
         
         <Route path="/round2" element={
           team ? <RoundTwo team={team} /> : <Navigate to="/login" replace />
+        } />
+
+        {/* Global 404 Route */}
+        <Route path="*" element={
+          <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', background: '#0B0A16', color: '#fff' }}>
+            <h1 style={{ fontSize: '6rem', color: '#ef4444', margin: 0, textShadow: '0 0 20px rgba(239, 68, 68, 0.5)' }}>404</h1>
+            <h2 style={{ marginBottom: '2rem', fontSize: '2rem' }}>System Node Not Found</h2>
+            <p style={{ marginBottom: '2rem', color: '#94a3b8' }}>The sector you are trying to access does not exist or has been restricted.</p>
+            <button className="btn-primary" onClick={() => navigate('/')}>Return to Base</button>
+          </div>
         } />
       </Routes>
     </>

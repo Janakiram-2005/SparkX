@@ -17,6 +17,7 @@ const AdminLogin = ({ onAuthSuccess }) => {
       const data = await res.json();
 
       if (data.success) {
+        sessionStorage.setItem('adminToken', Date.now().toString());
         onAuthSuccess();
       } else {
         setError(data.message || 'Invalid Security Key');

@@ -25,6 +25,8 @@ const JigsawPuzzle = ({ team, onComplete }) => {
   const [showRefModal, setShowRefModal] = useState(false);
   const [tabWarnings, setTabWarnings] = useState(0);
   const [showTabWarning, setShowTabWarning] = useState(false);
+  const [showVictoryModal, setShowVictoryModal] = useState(false);
+  const [issueRaised, setIssueRaised] = useState(false);
   const navigate = useNavigate();
   
   const [socket, setSocket] = useState(null);
@@ -52,33 +54,40 @@ const JigsawPuzzle = ({ team, onComplete }) => {
     const problemStatement = DEFAULT_DATABASE[assignedIdx].problemStatement;
     
     // Generate two canvases: one for pieces (no text) and one for reference/flip (with text)
-    const masterCanvas = generateAIAgenticImage(team.id || team._id, assignedData, problemStatement, false);
-    const masterCanvasRef = generateAIAgenticImage(team.id || team._id, assignedData, problemStatement, true);
-    
-    setTargetDataUrl(masterCanvasRef.toDataURL('image/png'));
-    setTargetDataUrlNoText(masterCanvas.toDataURL('image/png'));
-
-    const generatedPieces = [];
-    const tileSize = 120;
-    for (let r = 0; r < 6; r++) {
-      for (let c = 0; c < 6; c++) {
-        const index = r * 6 + c;
-        const tileCanvas = document.createElement('canvas');
-        tileCanvas.width = tileSize;
-        tileCanvas.height = tileSize;
-        const ctx = tileCanvas.getContext('2d');
+    const generatePuzzles = async () => {
+      try {
+        const masterCanvas = await generateAIAgenticImage(team.id || team._id, assignedData, problemStatement, false);
+        const masterCanvasRef = await generateAIAgenticImage(team.id || team._id, assignedData, problemStatement, true);
         
-        ctx.drawImage(masterCanvas, c * tileSize, r * tileSize, tileSize, tileSize, 0, 0, tileSize, tileSize);
-        ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
-        ctx.lineWidth = 2;
-        ctx.strokeRect(0, 0, tileSize, tileSize);
+        setTargetDataUrl(masterCanvasRef.toDataURL('image/png'));
+        setTargetDataUrlNoText(masterCanvas.toDataURL('image/png'));
 
-        generatedPieces.push({ id: index, row: r, col: c, dataUrl: tileCanvas.toDataURL('image/png') });
+        const generatedPieces = [];
+        const tileSize = 120;
+        for (let r = 0; r < 6; r++) {
+          for (let c = 0; c < 6; c++) {
+            const index = r * 6 + c;
+            const tileCanvas = document.createElement('canvas');
+            tileCanvas.width = tileSize;
+            tileCanvas.height = tileSize;
+            const ctx = tileCanvas.getContext('2d');
+            
+            ctx.drawImage(masterCanvas, c * tileSize, r * tileSize, tileSize, tileSize, 0, 0, tileSize, tileSize);
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, tileSize, tileSize);
+
+            generatedPieces.push({ id: index, row: r, col: c, dataUrl: tileCanvas.toDataURL('image/png') });
+          }
+        }
+        
+        setPieces(generatedPieces);
+        setTrayPieces([...generatedPieces].sort(() => Math.random() - 0.5));
+      } catch (err) {
+        console.error("Error generating puzzle images:", err);
       }
-    }
-    
-    setPieces(generatedPieces);
-    setTrayPieces([...generatedPieces].sort(() => Math.random() - 0.5));
+    };
+    generatePuzzles();
 
     // Socket already initialized above
     newSocket.on('timer_adjustment', ({ seconds }) => {
@@ -89,9 +98,9 @@ const JigsawPuzzle = ({ team, onComplete }) => {
     });
 
     newSocket.on('disqualified', () => {
-      alert("YOUR TEAM HAS BEEN DISQUALIFIED FOR TAB SWITCHING.");
+      alert("CRITICAL VIOLATION: YOUR TEAM HAS BEEN DISQUALIFIED FOR TAB SWITCHING.");
       localStorage.removeItem('sparkx_session');
-      navigate('/login');
+      window.location.href = '/login';
     });
 
     return () => newSocket.disconnect();
@@ -107,28 +116,36 @@ const JigsawPuzzle = ({ team, onComplete }) => {
       }
     };
 
+    let lastTrigger = 0;
+    const triggerTabViolation = () => {
+      const now = Date.now();
+      if (now - lastTrigger < 1000) return; // Prevent double trigger from blur + visibilitychange
+      lastTrigger = now;
+
+      setTabWarnings(prev => {
+        const newCount = prev + 1;
+        if (newCount >= 5) {
+           if (socket) socket.emit('tab_switch_violation', { teamId: team.id || team._id });
+        } else {
+           setShowTabWarning(true);
+           if (socket) socket.emit('tab_switch_violation', { teamId: team.id || team._id });
+        }
+        return newCount;
+      });
+    };
+
     const handleVisibilityChange = () => {
-      if (document.hidden) {
-        // Tab switch detected
-        setTabWarnings(prev => {
-          const newCount = prev + 1;
-          if (newCount >= 3) {
-             if (socket) socket.emit('tab_switch_violation', { teamId: team.id || team._id });
-          } else {
-             setShowTabWarning(true);
-             if (socket) socket.emit('tab_switch_violation', { teamId: team.id || team._id });
-          }
-          return newCount;
-        });
-      }
+      if (document.hidden) triggerTabViolation();
     };
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', triggerTabViolation);
     
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', triggerTabViolation);
     };
   }, [socket, team]);
 
@@ -203,7 +220,11 @@ const JigsawPuzzle = ({ team, onComplete }) => {
   const handleVictory = () => {
     setPhase('ended');
     if (socket) socket.emit('puzzle_complete', { teamId: team.id, score: points });
-    setTimeout(() => onComplete(), 3000);
+    
+    // Show flipped image for 2 seconds, then pop up the problem statement modal
+    setTimeout(() => {
+      setShowVictoryModal(true);
+    }, 2000);
   };
 
   const handleTimeUp = () => {
@@ -213,6 +234,14 @@ const JigsawPuzzle = ({ team, onComplete }) => {
     setWarningText("TIME IS UP!");
     if (socket) socket.emit('puzzle_complete', { teamId: team.id, score: 0 });
     setTimeout(() => onComplete(), 3000);
+  };
+
+  const handleRaiseIssue = () => {
+    if (socket && !issueRaised) {
+      socket.emit('raise_issue', { teamId: team.id || team._id, teamName: team.team_name || `Team ${team.id || team._id}` });
+      setIssueRaised(true);
+      setTimeout(() => setIssueRaised(false), 10000); // 10s cooldown
+    }
   };
 
   // Drag Drop Mechanics (Locked in Familiarization Phase)
@@ -281,9 +310,12 @@ const JigsawPuzzle = ({ team, onComplete }) => {
   };
 
   return (
-    <div className="puzzle-layout">
+    <div className="stitch-layout">
+      {/* Background effect */}
+      <div className="stitch-bg"></div>
+
       {/* Anti Cheat Overlay */}
-      {!isFullscreen && !showTabWarning && (
+      {!isFullscreen && !showTabWarning && !showVictoryModal && (
         <div className="anti-cheat-overlay">
           <h2>⚠️ FULL SCREEN EXITED</h2>
           <p>The timer has been paused. You must remain in full-screen to continue.</p>
@@ -293,13 +325,13 @@ const JigsawPuzzle = ({ team, onComplete }) => {
 
       {/* Tab Switch Overlay */}
       {showTabWarning && (
-        <div className="anti-cheat-overlay" style={{ background: 'rgba(220, 38, 38, 0.95)' }}>
+        <div className="anti-cheat-overlay" style={{ background: 'rgba(220, 38, 38, 0.95)', zIndex: 100 }}>
           <h1 style={{ fontSize: '3rem', margin: 0, textShadow: '0 0 20px #000' }}>⚠️ TAB SWITCH DETECTED</h1>
           <p style={{ fontSize: '1.5rem', fontWeight: 'bold' }}>
-            Warning {tabWarnings} of 3.
+            Warning {tabWarnings} of 5.
           </p>
           <p>Switching tabs or minimizing the browser is strictly prohibited. Your actions have been logged.</p>
-          <p style={{ marginTop: '1rem', color: '#ffb' }}>Reaching 3 warnings will result in immediate disqualification.</p>
+          <p style={{ marginTop: '1rem', color: '#ffb' }}>Reaching 5 warnings will result in immediate disqualification.</p>
           <button className="btn-primary" style={{ marginTop: '2rem', background: '#000', color: '#fff', border: '1px solid #fff' }} onClick={() => {
             setShowTabWarning(false);
             requestFullscreen();
@@ -308,110 +340,194 @@ const JigsawPuzzle = ({ team, onComplete }) => {
       )}
 
       {/* 5s Warning Overlay */}
-      {showWarning && isFullscreen && (
+      {showWarning && isFullscreen && !showVictoryModal && (
         <div className="warning-overlay">
           <h1 className="warning-huge">{warningText}</h1>
         </div>
       )}
 
-      <div className="puzzle-header">
-        <div className="puzzle-title">
-          <span className="purple">AGENTIC</span> AI DAY
-          {puzzleData && <span className="puzzle-theme-badge">{puzzleData.theme}</span>}
-        </div>
-        <div className="team-info">Team #{team.id} - {team.name}</div>
-      </div>
-
-      <div className="puzzle-subheader">
-        <div className={`stat-box timer ${phase === 'locked' ? 'locked-timer' : ''}`}>
-          <span className="label">{phase === 'locked' ? 'UNLOCKS IN' : 'TIMER'}</span>
-          <span className="val">{formatTime(timeLeft)}</span>
-        </div>
-        <div className="stat-box flex-grow">
-          <span className="label">PROGRESS ({matchedCount}/36)</span>
-          <div className="progress-bar-container">
-            <div className="progress-bar-fill" style={{ width: `${(matchedCount/36)*100}%` }}></div>
-          </div>
-        </div>
-        <div className="stat-box points">
-          <span className="label">POINTS</span>
-          <span className="val">{points}</span>
-        </div>
-        <button className="ref-img-btn" onClick={() => setShowRefModal(true)}>
-          REFERENCE IMG
-        </button>
-      </div>
-
+      {/* Reference Image Modal */}
       {showRefModal && (
         <div className="anti-cheat-overlay" onClick={() => setShowRefModal(false)}>
-          <div className="ref-modal-content" onClick={e => e.stopPropagation()} style={{ background: '#0f172a', padding: '2rem', borderRadius: '16px', position: 'relative' }}>
+          <div className="glass-panel" onClick={e => e.stopPropagation()} style={{ padding: '2rem', borderRadius: '16px', position: 'relative' }}>
             <button 
               onClick={() => setShowRefModal(false)}
               style={{ position: 'absolute', top: '10px', right: '15px', background: 'transparent', border: 'none', color: '#fff', fontSize: '1.5rem', cursor: 'pointer' }}
             >
               &times;
             </button>
-            <h3 style={{ marginTop: 0, color: 'var(--purple-neon)' }}>Target Reference</h3>
+            <h3 style={{ marginTop: 0, color: 'var(--stitch-primary)' }}>Target Reference</h3>
             <img src={targetDataUrlNoText} alt="Reference" style={{ width: '400px', height: '400px', objectFit: 'cover', borderRadius: '8px' }} />
           </div>
         </div>
       )}
 
-      <div className="puzzle-main-content">
-        <div className="board-wrapper">
-          <div className={`flip-container ${matchedCount === 36 ? 'flipped' : ''}`}>
-            <div className="flip-inner">
-              <div className="flip-front">
-                <div className={`board-grid ${phase === 'locked' ? 'board-locked' : ''}`}>
-                  {boardSlots.map((piece, i) => (
-                    <div 
-                      key={i} 
-                      className={`board-slot ${piece && piece.id === i ? 'correct-slot' : ''}`}
-                      onDragOver={e => e.preventDefault()}
-                      onDrop={e => handleDropBoard(e, i)}
-                    >
-                      {piece ? (
-                        <img 
-                          src={piece.dataUrl} 
-                          alt="piece" 
-                          className="puzzle-piece"
-                          draggable={phase !== 'locked'}
-                          onDragStart={e => handleDragStart(e, piece, 'board', i)}
-                        />
-                      ) : (
-                        <span className="slot-number">{i + 1}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
+      {/* Victory Problem Statement Modal */}
+      {showVictoryModal && (
+        <div className="anti-cheat-overlay victory-modal" style={{ background: 'rgba(0, 0, 0, 0.9)', zIndex: 90 }}>
+          <div className="glass-panel" style={{ padding: '3rem', borderRadius: '16px', maxWidth: '800px', textAlign: 'center', border: '2px solid var(--stitch-primary)', boxShadow: '0 0 40px rgba(0, 243, 255, 0.3)' }}>
+            <h1 style={{ color: 'var(--stitch-primary)', fontSize: '3rem', margin: '0 0 1rem 0', textShadow: '0 0 15px rgba(0, 243, 255, 0.8)' }}>COMPLETED SUCCESSFULLY!</h1>
+            <p style={{ fontSize: '1.2rem', color: '#cbd5e1', marginBottom: '2rem' }}>Congratulations Team {team.id || team._id}! You have successfully completed the Round 1 challenge.</p>
+            
+            <div className="problem-statement-box" style={{ background: 'rgba(0,0,0,0.6)', padding: '2rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-around' }}>
+              <div>
+                <h3 style={{ margin: '0 0 0.5rem 0', color: '#94a3b8' }}>Time Taken</h3>
+                <h2 style={{ margin: 0, color: '#fff', fontSize: '2rem' }}>{600 - timeLeft}s</h2>
               </div>
-              <div className="flip-back">
-                <img src={targetDataUrl} alt="Solved Puzzle" className="solved-image" />
+              <div>
+                <h3 style={{ margin: '0 0 0.5rem 0', color: '#94a3b8' }}>Score</h3>
+                <h2 style={{ margin: 0, color: 'var(--stitch-primary)', fontSize: '2rem', textShadow: '0 0 10px rgba(0,243,255,0.5)' }}>{points} pts</h2>
               </div>
             </div>
+            
+            <button className="btn-primary" onClick={onComplete} style={{ fontSize: '1.2rem', padding: '1rem 3rem' }}>
+              GO TO DASHBOARD
+            </button>
           </div>
-          {phase === 'locked' && <div className="locked-overlay-text">UI FAMILIARIZATION PHASE. PIECES ARE LOCKED.</div>}
+        </div>
+      )}
+
+      {/* Header */}
+      <header className="stitch-header">
+        <div className="header-left">
+          <h1 className="header-title">AI SPARKX • TEAM</h1>
+          <div className="team-badge">
+            <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>group</span>
+            <span>TEAM #{team.id || 'BETA'}</span>
+          </div>
+        </div>
+        <div className="header-right">
+          {/* Removed Settings button */}
+        </div>
+      </header>
+
+      {/* Sidebar */}
+      <nav className="stitch-sidebar">
+        <div className="sidebar-info">
+          <div className="sidebar-icon">
+            <span className="material-symbols-outlined text-tertiary">extension</span>
+          </div>
+          <div>
+            <h2>Task Force</h2>
+            <p>{matchedCount}/36 Pieces</p>
+          </div>
+        </div>
+        <div className="sidebar-links">
+          <a className="active" href="#workspace">
+            <span className="material-symbols-outlined">extension</span> Workspace
+          </a>
+          <a href="#chat">
+            <span className="material-symbols-outlined">forum</span> Team Chat
+          </a>
+          {/* Removed Stats link */}
+        </div>
+        <div className="sidebar-footer">
+          <button className={`btn-invite ${issueRaised ? 'btn-cooldown' : 'btn-danger'}`} onClick={handleRaiseIssue} disabled={issueRaised}>
+            <span className="material-symbols-outlined">{issueRaised ? 'check' : 'warning'}</span>
+            {issueRaised ? 'Alert Sent' : 'Raise Issue'}
+          </button>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main className="stitch-main">
+        {/* Stats Bar */}
+        <div className="stitch-stats-bar">
+          <div className="stat-timer">
+            <span className="material-symbols-outlined text-error">timer</span>
+            <div className="stat-col">
+              <span className="stat-label">{phase === 'locked' ? 'UNLOCKS IN' : 'TIME REMAINING'}</span>
+              <span className="stat-val timer-val">{formatTime(timeLeft)}</span>
+            </div>
+          </div>
+          
+          <div className="stat-progress">
+            <div className="progress-header">
+              <span>PUZZLE PROGRESS</span>
+              <span className="text-tertiary">{matchedCount}/36 Pieces</span>
+            </div>
+            <div className="progress-track">
+              <div className="progress-fill" style={{ width: `${(matchedCount/36)*100}%` }}></div>
+            </div>
+          </div>
+
+          <div className="stat-points">
+            <span className="material-symbols-outlined text-primary">stars</span>
+            <div className="stat-col">
+              <span className="stat-label">CURRENT POINTS</span>
+              <span className="stat-val text-primary">{points} <span style={{fontSize: '0.875rem', fontWeight: 'normal', color: 'var(--stitch-text-dim)'}}>pts</span></span>
+            </div>
+          </div>
         </div>
 
-        <div 
-          className="tray-wrapper"
-          onDragOver={e => e.preventDefault()}
-          onDrop={handleDropTray}
-        >
-          <div className="tray-grid">
-            {trayPieces.map((piece, i) => (
-              <img 
-                key={piece.id}
-                src={piece.dataUrl} 
-                alt="tray piece" 
-                className="puzzle-piece"
-                draggable={phase !== 'locked'}
-                onDragStart={e => handleDragStart(e, piece, 'tray', i)}
-              />
-            ))}
+        {/* Puzzle Area */}
+        <div className="stitch-puzzle-area">
+          {/* Left Column: Grid */}
+          <div className="stitch-grid-wrapper">
+            <div className="stitch-grid-bg"></div>
+            
+            <div className={`flip-container ${matchedCount === 36 ? 'flipped' : ''}`}>
+              <div className="flip-inner">
+                <div className="flip-front">
+                  <div className={`stitch-grid ${phase === 'locked' ? 'locked' : ''}`}>
+                    {boardSlots.map((piece, i) => (
+                      <div 
+                        key={i} 
+                        className={`stitch-slot ${piece && piece.id === i ? 'correct-slot' : ''}`}
+                        onDragOver={e => e.preventDefault()}
+                        onDrop={e => handleDropBoard(e, i)}
+                      >
+                        {piece ? (
+                          <img 
+                            src={piece.dataUrl} 
+                            alt="piece" 
+                            className="stitch-piece"
+                            draggable={phase !== 'locked'}
+                            onDragStart={e => handleDragStart(e, piece, 'board', i)}
+                          />
+                        ) : (
+                          <span className="material-symbols-outlined slot-icon">add</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="flip-back">
+                  <img src={targetDataUrl} alt="Solved" className="solved-image" />
+                </div>
+              </div>
+            </div>
+
+            {phase === 'locked' && <div className="locked-overlay-text">UI FAMILIARIZATION PHASE. PIECES ARE LOCKED.</div>}
+          </div>
+
+          {/* Right Column: Tray */}
+          <div className="stitch-tray-wrapper" onDragOver={e => e.preventDefault()} onDrop={handleDropTray}>
+            <div className="tray-header">
+              <h3>Pieces Tray</h3>
+              <span className="tray-avail">{trayPieces.length} avail</span>
+            </div>
+            <div className="tray-grid">
+              {trayPieces.map((piece, i) => (
+                <div className="tray-piece-container" key={piece.id}>
+                  <img 
+                    src={piece.dataUrl} 
+                    alt="tray piece" 
+                    className="stitch-piece"
+                    draggable={phase !== 'locked'}
+                    onDragStart={e => handleDragStart(e, piece, 'tray', i)}
+                  />
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+
+        <button className="stitch-fab" onClick={() => setShowRefModal(true)}>
+          <span className="material-symbols-outlined text-primary">visibility</span>
+          <span>View Reference Image</span>
+        </button>
+      </main>
     </div>
   );
 };

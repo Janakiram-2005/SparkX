@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
 import './AdminDashboard.css';
 
@@ -12,12 +12,17 @@ const AdminDashboard = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [cutoff, setCutoff] = useState(20);
   
+  const [activeTab, setActiveTab] = useState('leaderboard');
+  const [alerts, setAlerts] = useState([]);
+
   const [editingTeam, setEditingTeam] = useState(null);
   const [addingTeam, setAddingTeam] = useState(false);
   const [newTeamData, setNewTeamData] = useState({ 
     team_name: '', ai_id: '', password: '', officialTeamId: '', eventName: '', 
     members: [{ fullName: '', role: '', agenticAiRegId: '', universityRegNo: '', yearOfStudy: '', dob: '', phone: '', email: '' }] 
   });
+
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const newSocket = io(import.meta.env.PROD ? undefined : 'http://localhost:5000');
@@ -58,11 +63,21 @@ const AdminDashboard = () => {
     });
 
     newSocket.on('team_update', (updatedTeam) => {
-      setTeams(prev => prev.map(t => t._id === updatedTeam._id ? updatedTeam : t));
+      if (!updatedTeam) fetchTeams(); // fallback
+      else setTeams(prev => prev.map(t => t._id === updatedTeam._id ? updatedTeam : t));
+    });
+
+    newSocket.on('new_alert', (alert) => {
+      setAlerts(prev => [alert, ...prev]);
+    });
+
+    newSocket.on('alert_resolved', ({ alertId }) => {
+      setAlerts(prev => prev.filter(a => a.id !== alertId));
     });
 
     fetchState();
     fetchTeams();
+    fetchAlerts();
 
     return () => newSocket.disconnect();
   }, []);
@@ -82,8 +97,32 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchAlerts = async () => {
+    const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/alerts`);
+    const data = await res.json();
+    if (data.success) setAlerts(data.alerts);
+  };
+
+  const resolveAlert = (alertId) => {
+    if (socket) socket.emit('resolve_alert', { alertId });
+  };
+
+  useEffect(() => {
+    if (file) handleFileUpload();
+  }, [file]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    setSearchQuery('');
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('adminToken');
+    window.location.href = '/';
+  };
+
   const handleFileUpload = async () => {
-    if (!file) return alert('Please select an Excel file');
+    if (!file) return;
     const formData = new FormData();
     formData.append('file', file);
     try {
@@ -106,10 +145,11 @@ const AdminDashboard = () => {
     } catch (err) {
       alert('Upload failed');
     }
+    setFile(null);
   };
 
   const seedData = async () => {
-    if(!window.confirm("Seed database with temporary teams?")) return;
+    if(!window.confirm('Seed database with temporary teams?')) return;
     try {
       const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/seed`, { method: 'POST' });
       const data = await res.json();
@@ -118,12 +158,12 @@ const AdminDashboard = () => {
         fetchTeams();
       }
     } catch (err) {
-      alert("Seeding failed");
+      alert('Seeding failed');
     }
   };
 
   const purgeData = async () => {
-    if(!window.confirm("WARNING: Delete ALL teams from the database?")) return;
+    if(!window.confirm('WARNING: Delete ALL teams from the database?')) return;
     try {
       const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/purge`, { method: 'POST' });
       const data = await res.json();
@@ -132,7 +172,7 @@ const AdminDashboard = () => {
         fetchTeams();
       }
     } catch (err) {
-      alert("Purge failed");
+      alert('Purge failed');
     }
   };
 
@@ -199,7 +239,7 @@ const AdminDashboard = () => {
       const data = await res.json();
       if(data.success) fetchTeams();
     } catch (err) {
-      alert("Cutoff failed");
+      alert('Cutoff failed');
     }
   };
 
@@ -232,7 +272,7 @@ const AdminDashboard = () => {
         fetchTeams();
       }
     } catch (e) {
-      alert("Edit failed");
+      alert('Edit failed');
     }
   };
 
@@ -253,7 +293,7 @@ const AdminDashboard = () => {
         fetchTeams();
       }
     } catch (e) {
-      alert("Failed to add team");
+      alert('Failed to add team');
     }
   };
 
@@ -265,127 +305,320 @@ const AdminDashboard = () => {
   );
 
   return (
-    <div className="admin-dashboard">
-      <header className="admin-header">
-        <h1>Admin Control Panel</h1>
-        <div style={{display: 'flex', gap: '2rem'}}>
-          <div className="admin-status">
-            <span className={`status-indicator ${isRoundActive ? 'active' : 'waiting'}`}></span>
-            R1 {isRoundActive ? 'LIVE' : 'LOCKED'}
+    <div className="admin-dashboard-container">
+      {/* Top Navbar */}
+      <nav className="admin-topbar">
+        <h1 className="font-display">Ai SparkX Admin</h1>
+        <div className="admin-tabs" style={{ display: 'flex', gap: '1rem', flex: 1, justifyContent: 'center' }}>
+          <button 
+            style={{ padding: '0.5rem 2rem', borderRadius: '8px', background: activeTab === 'leaderboard' ? 'rgba(255,255,255,0.1)' : 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: activeTab === 'leaderboard' ? '#fff' : '#94a3b8', cursor: 'pointer' }}
+            onClick={() => setActiveTab('leaderboard')}
+          >
+            Leaderboard
+          </button>
+          <button 
+            style={{ padding: '0.5rem 2rem', borderRadius: '8px', background: activeTab === 'alerts' ? 'rgba(239, 68, 68, 0.2)' : 'transparent', border: '1px solid rgba(239, 68, 68, 0.4)', color: activeTab === 'alerts' ? '#ef4444' : '#94a3b8', cursor: 'pointer', position: 'relative' }}
+            onClick={() => setActiveTab('alerts')}
+          >
+            Alerts 
+            {alerts.length > 0 && <span style={{ position: 'absolute', top: '-8px', right: '-8px', background: '#ef4444', color: '#fff', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 'bold' }}>{alerts.length}</span>}
+          </button>
+        </div>
+        <div className="round-status-badges">
+          <div className="status-badge">
+            <span className={`status-dot ${isRoundActive ? 'active' : ''}`}></span>
+            Round 1 {isRoundActive ? 'ACTIVE' : 'LOCKED'}
           </div>
-          <div className="admin-status">
-            <span className={`status-indicator ${isRound2Active ? 'active' : 'waiting'}`}></span>
-            R2 {isRound2Active ? 'LIVE' : 'LOCKED'}
+          <div className="status-badge">
+            <span className={`status-dot ${isRound2Active ? 'active' : ''}`}></span>
+            Round 2 {isRound2Active ? 'ACTIVE' : 'LOCKED'}
           </div>
         </div>
-      </header>
+      </nav>
 
-      <div className="admin-controls-grid">
-        {/* DB Control Card */}
-        <div className="admin-card">
-          <h2>1. Database Controls</h2>
-          <div className="upload-zone" style={{ marginBottom: '1rem' }}>
-            <input type="file" accept=".xlsx, .xls" onChange={e => setFile(e.target.files[0])} />
-            <button className="btn-primary" onClick={handleFileUpload}>Import Excel</button>
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
-            <button className="btn-secondary" style={{flex: 1}} onClick={seedData}>Seed Mock Data</button>
-            <button className="btn-danger" style={{flex: 1}} onClick={purgeData}>Purge All</button>
-          </div>
-          <button className="btn-primary" style={{ width: '100%', marginBottom: '0.5rem', background: '#3b82f6' }} onClick={() => setAddingTeam(true)}>+ Add Single Team</button>
-          <button className="btn-primary" style={{ width: '100%', background: '#10b981' }} onClick={exportExcel}>Export Teams to Excel</button>
-        </div>
-
-        {/* Round 1 Card */}
-        <div className="admin-card">
-          <h2>2. Round 1 Controls</h2>
-          <div className="master-actions">
-            <button 
-              className={`btn-giant ${isRoundActive ? 'btn-danger' : 'btn-success'}`}
-              onClick={toggleRoundState}
-            >
-              {isRoundActive ? 'LOCK ROUND 1' : 'START ROUND 1'}
+      {/* Main Layout Grid */}
+      <div className="admin-layout">
+        
+        {/* Sidebar Controls */}
+        <aside className="admin-sidebar">
+          
+          <div className="sidebar-section">
+            <h3>Database Management</h3>
+            
+            <input type="file" ref={fileInputRef} style={{display: 'none'}} accept=".xlsx, .xls" onChange={e => setFile(e.target.files[0])} />
+            <button onClick={() => fileInputRef.current.click()} className="sidebar-btn">
+              <i className="fa-solid fa-file-excel"></i>
+              Import Excel
+            </button>
+            
+            <button onClick={seedData} className="sidebar-btn">
+              <i className="fa-solid fa-database"></i>
+              Seed DB
+            </button>
+            
+            <button onClick={() => setAddingTeam(true)} className="sidebar-btn btn-accent">
+              <i className="fa-solid fa-user-plus"></i>
+              Add Team
+            </button>
+            
+            <button onClick={purgeData} className="sidebar-btn btn-danger-link">
+              <i className="fa-solid fa-trash-can"></i>
+              Purge All Data
             </button>
           </div>
-        </div>
 
-        {/* Round 2 Card */}
-        <div className="admin-card">
-          <h2>3. Round 2 Setup</h2>
-          <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem' }}>
-             <input type="number" className="admin-input" value={cutoff} onChange={e=>setCutoff(e.target.value)} style={{width: '60px'}} />
-             <button className="btn-secondary" onClick={applyCutoff}>Auto-Qualify Top N</button>
+          <div className="sidebar-section">
+            <h3>Round 1 Control</h3>
+            <button onClick={toggleRoundState} className={`sidebar-btn ${isRoundActive ? 'btn-danger-link' : 'btn-accent'}`}>
+              <i className={`fa-solid ${isRoundActive ? 'fa-lock' : 'fa-rocket'}`}></i>
+              {isRoundActive ? 'Lock Round 1' : 'Start Round 1'}
+            </button>
           </div>
-          <div style={{ display: 'flex', gap: '1rem' }}>
-             <input type="number" className="admin-input" value={round2TimerInput} onChange={e=>setRound2TimerInput(e.target.value)} style={{width: '60px'}} title="Minutes" />
-             <button className={`btn-primary ${isRound2Active ? 'btn-danger' : 'btn-success'}`} onClick={toggleRound2State}>
-               {isRound2Active ? 'STOP R2' : 'LAUNCH R2'}
-             </button>
-          </div>
-        </div>
 
-        {/* Export Card */}
-        <div className="admin-card">
-          <h2>4. Data Export</h2>
-          <button className="btn-secondary" onClick={exportExcel} style={{width: '100%'}}>Export Results to Excel</button>
-        </div>
+          <div className="sidebar-section">
+            <h3>Round 2 Control</h3>
+            
+            <div className="round-input-group">
+              <input type="number" value={cutoff} onChange={e=>setCutoff(e.target.value)} title="Qualify Top N Teams" />
+              <button onClick={applyCutoff}>Qualify Top</button>
+            </div>
+            
+            <div className="round-input-group">
+              <input type="number" value={round2TimerInput} onChange={e=>setRound2TimerInput(e.target.value)} title="Timer (Mins)" />
+              <button onClick={toggleRound2State} style={isRound2Active ? {background: 'rgba(239, 68, 68, 0.2)', color: '#f87171'} : {}}>
+                {isRound2Active ? 'Stop R2' : 'Start R2'}
+              </button>
+            </div>
+          </div>
+
+          <div className="sidebar-section">
+            <h3>Data Export</h3>
+            <button onClick={exportExcel} className="sidebar-btn">
+              <i className="fa-solid fa-download"></i>
+              Export Results
+            </button>
+            <button onClick={() => window.location.href = `${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/export-eval`} className="sidebar-btn">
+              <i className="fa-solid fa-file-csv"></i>
+              Export Eval Sheet
+            </button>
+            <button onClick={() => window.location.href = `${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/export-qualified`} className="sidebar-btn" style={{background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.5)'}}>
+              <i className="fa-solid fa-users"></i>
+              Export Qualified List
+            </button>
+            <button onClick={() => window.open(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/teams/export-ps`, '_blank')} className="sidebar-btn" style={{background: 'rgba(59, 130, 246, 0.2)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.5)'}}>
+              <i className="fa-solid fa-print"></i>
+              Download PS Allocation
+            </button>
+          </div>
+
+          <div className="sidebar-section">
+            <h3>System</h3>
+            <button onClick={handleLogout} className="sidebar-btn" style={{background: 'rgba(239, 68, 68, 0.2)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.5)'}}>
+              <i className="fa-solid fa-right-from-bracket"></i>
+              Logout Admin
+            </button>
+          </div>
+
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="admin-main">
+          
+          {activeTab === 'leaderboard' ? (
+            <div className="glass-card">
+              
+              <div className="glass-card-header">
+                <div>
+                  <h2 className="font-display">Global Leaderboard</h2>
+                  <p>Live monitoring of all teams</p>
+                </div>
+                <div className="search-bar">
+                  <input 
+                    type="text" 
+                    className="search-input" 
+                    placeholder="Search teams, IDs, or members..."
+                    value={searchQuery}
+                    onChange={e => setSearchQuery(e.target.value)}
+                  />
+                  <button className="btn-primary" onClick={fetchTeams}>
+                    <i className="fa-solid fa-rotate-right"></i> Refresh
+                  </button>
+                </div>
+              </div>
+
+              <div className="table-responsive">
+                <table className="leaderboard-table">
+                  <thead>
+                    <tr>
+                      <th style={{width: '25%'}}>Team Name</th>
+                      <th style={{width: '15%'}}>AI Credentials</th>
+                      <th style={{width: '15%'}}>Status</th>
+                      <th style={{width: '20%'}}>Progress</th>
+                      <th style={{width: '10%'}}>Score</th>
+                      <th style={{width: '15%', textAlign: 'center'}}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredTeams.length === 0 ? (
+                      <tr><td colSpan="6" style={{textAlign: 'center', padding: '3rem', color: '#94a3b8'}}>No teams match your search criteria.</td></tr>
+                    ) : (
+                      filteredTeams.map(team => {
+                        const isDQ = team.disqualified;
+                        const isCompleted = team.status === 'completed';
+                        let statusClass = 'status-ready';
+                        let statusText = team.status || 'READY';
+                        if(isDQ) { statusClass = 'status-dq'; statusText = 'DISQUALIFIED'; }
+                        else if(isCompleted) { statusClass = 'status-completed'; }
+                        else if(statusText === 'computing') { statusClass = 'status-computing'; }
+
+                        return (
+                          <tr key={team._id} className={`table-row ${isDQ ? 'row-dq' : ''}`}>
+                            <td>
+                              <div className="team-info">
+                                <div className="team-avatar">
+                                  {team.team_name ? team.team_name[0].toUpperCase() : '?'}
+                                </div>
+                                <div className="team-details">
+                                  <strong>{team.team_name}</strong>
+                                  <span>{team.officialTeamId}</span>
+                                </div>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="ai-credentials font-mono">
+                                <span>{team.ai_id}</span>
+                                <span className="ai-pass">{team.password}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className={`status-pill ${statusClass}`}>
+                                <span className="dot"></span>
+                                {statusText.toUpperCase()}
+                              </div>
+                            </td>
+                            <td>
+                              <div className="progress-track">
+                                <div className="progress-fill" style={{ width: `${team.jigsaw_progress || 0}%`, filter: isDQ ? 'grayscale(1)' : 'none' }}></div>
+                              </div>
+                              <span className="progress-text">{team.jigsaw_progress || 0}%</span>
+                            </td>
+                            <td>
+                              <div className="score-display">
+                                {team.score || 0}
+                                <span>Attempts: {team.round1_attempts || 1}</span>
+                              </div>
+                            </td>
+                            <td>
+                              <div className="action-group">
+                                <button 
+                                  className={`btn-qualify ${team.qualifiedForRound2 ? 'promoted' : 'not-promoted'}`}
+                                  onClick={() => toggleRound2Promotion(team._id)}
+                                  disabled={isDQ}
+                                  title={team.qualifiedForRound2 ? 'Revoke R2' : 'Qualify R2'}
+                                >
+                                  {team.qualifiedForRound2 ? 'R2 QUALIFIED' : 'R2 PROMOTE'}
+                                </button>
+                                <button className="btn-icon edit" title="Edit Team" onClick={() => setEditingTeam(team)}>
+                                  <i className="fa-solid fa-pen-to-square"></i>
+                                </button>
+                                <button className="btn-icon restart" title="Restart Attempt" onClick={() => resetTeam(team._id)}>
+                                  <i className="fa-solid fa-rotate-left"></i>
+                                </button>
+                                <button className="btn-icon dq" title={isDQ ? 'Undo Disqualify' : 'Disqualify'} onClick={() => disqualifyTeam(team._id)}>
+                                  <i className="fa-solid fa-ban"></i>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+            </div>
+          ) : (
+            <div className="glass-card">
+               <div className="glass-card-header">
+                 <div>
+                   <h2 className="font-display">Active Alerts</h2>
+                   <p>Real-time issues raised by teams</p>
+                 </div>
+               </div>
+               <div className="alerts-list" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1rem' }}>
+                 {alerts.length === 0 ? (
+                   <div style={{ textAlign: 'center', color: '#94a3b8', padding: '3rem', fontSize: '1.2rem' }}>No active alerts. Teams are doing great!</div>
+                 ) : (
+                   alerts.map(a => (
+                     <div key={a.id} className="alert-item" style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid #ef4444', borderRadius: '8px', padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                       <div>
+                         <h3 style={{ margin: '0 0 0.5rem 0', color: '#ef4444', fontSize: '1.25rem' }}>{a.teamName} (Team #{a.teamId}) raised an issue!</h3>
+                         <span style={{ fontSize: '0.875rem', color: '#94a3b8' }}>Raised at: {new Date(a.timestamp).toLocaleTimeString()}</span>
+                       </div>
+                       <button className="btn-primary" style={{ background: '#ef4444', border: 'none', color: '#fff' }} onClick={() => resolveAlert(a.id)}>Mark Resolved</button>
+                     </div>
+                   ))
+                 )}
+               </div>
+            </div>
+          )}
+
+        </main>
       </div>
-      
+
+      {/* Editing Modal */}
       {editingTeam && (
-        <div className="edit-modal-overlay">
-          <div className="edit-modal" style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div className="modal-overlay" onClick={() => setEditingTeam(null)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3>Edit Team: {editingTeam.team_name}</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div className="edit-form-group">
+            
+            <div className="form-grid">
+              <div className="form-group">
                 <label>Team Name</label>
-                <input className="admin-input" value={editingTeam.team_name || ''} onChange={e => setEditingTeam({...editingTeam, team_name: e.target.value})} />
+                <input value={editingTeam.team_name || ''} onChange={e => setEditingTeam({...editingTeam, team_name: e.target.value})} />
               </div>
-              <div className="edit-form-group">
+              <div className="form-group">
                 <label>Official Team ID</label>
-                <input className="admin-input" value={editingTeam.officialTeamId || ''} onChange={e => setEditingTeam({...editingTeam, officialTeamId: e.target.value})} />
+                <input value={editingTeam.officialTeamId || ''} onChange={e => setEditingTeam({...editingTeam, officialTeamId: e.target.value})} />
               </div>
-              <div className="edit-form-group">
-                <label>Login ID</label>
-                <input className="admin-input" value={editingTeam.ai_id || ''} onChange={e => setEditingTeam({...editingTeam, ai_id: e.target.value})} />
+              <div className="form-group">
+                <label>Login ID (AI Code)</label>
+                <input value={editingTeam.ai_id || ''} onChange={e => setEditingTeam({...editingTeam, ai_id: e.target.value})} />
               </div>
-              <div className="edit-form-group">
+              <div className="form-group">
                 <label>Password</label>
-                <input className="admin-input" value={editingTeam.password || ''} onChange={e => setEditingTeam({...editingTeam, password: e.target.value})} />
+                <input value={editingTeam.password || ''} onChange={e => setEditingTeam({...editingTeam, password: e.target.value})} />
               </div>
             </div>
             
-            <h4>Team Members</h4>
+            <h3>Team Members</h3>
             {(editingTeam.members || []).map((m, i) => (
-              <div key={i} style={{ border: '1px solid #334155', padding: '1rem', marginBottom: '1rem', borderRadius: '8px' }}>
-                <h5>Member {i + 1}</h5>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <input className="admin-input" placeholder="Full Name" value={m.fullName || ''} onChange={e => {
-                    const newMembers = [...editingTeam.members]; newMembers[i].fullName = e.target.value; setEditingTeam({...editingTeam, members: newMembers});
-                  }} />
-                  <input className="admin-input" placeholder="Role (e.g. Leader)" value={m.role || ''} onChange={e => {
-                    const newMembers = [...editingTeam.members]; newMembers[i].role = e.target.value; setEditingTeam({...editingTeam, members: newMembers});
-                  }} />
-                  <input className="admin-input" placeholder="University Reg No" value={m.universityRegNo || ''} onChange={e => {
-                    const newMembers = [...editingTeam.members]; newMembers[i].universityRegNo = e.target.value; setEditingTeam({...editingTeam, members: newMembers});
-                  }} />
-                  <input className="admin-input" placeholder="Email" value={m.email || ''} onChange={e => {
-                    const newMembers = [...editingTeam.members]; newMembers[i].email = e.target.value; setEditingTeam({...editingTeam, members: newMembers});
-                  }} />
-                  <input className="admin-input" placeholder="Phone" value={m.phone || ''} onChange={e => {
-                    const newMembers = [...editingTeam.members]; newMembers[i].phone = e.target.value; setEditingTeam({...editingTeam, members: newMembers});
-                  }} />
+              <div key={i} className="member-card">
+                <div className="member-card-header">
+                  <h5>Member {i + 1}</h5>
+                  <button className="btn-remove" onClick={() => {
+                    const newMembers = [...editingTeam.members]; newMembers.splice(i, 1); setEditingTeam({...editingTeam, members: newMembers});
+                  }}>Remove</button>
+                </div>
+                <div className="form-grid" style={{marginBottom: 0}}>
+                  <div className="form-group"><input placeholder="Full Name" value={m.fullName || ''} onChange={e => { const newMembers = [...editingTeam.members]; newMembers[i].fullName = e.target.value; setEditingTeam({...editingTeam, members: newMembers}); }} /></div>
+                  <div className="form-group"><input placeholder="Role" value={m.role || ''} onChange={e => { const newMembers = [...editingTeam.members]; newMembers[i].role = e.target.value; setEditingTeam({...editingTeam, members: newMembers}); }} /></div>
+                  <div className="form-group"><input placeholder="University Reg No" value={m.universityRegNo || ''} onChange={e => { const newMembers = [...editingTeam.members]; newMembers[i].universityRegNo = e.target.value; setEditingTeam({...editingTeam, members: newMembers}); }} /></div>
+                  <div className="form-group"><input placeholder="Email" value={m.email || ''} onChange={e => { const newMembers = [...editingTeam.members]; newMembers[i].email = e.target.value; setEditingTeam({...editingTeam, members: newMembers}); }} /></div>
+                  <div className="form-group"><input placeholder="Phone" value={m.phone || ''} onChange={e => { const newMembers = [...editingTeam.members]; newMembers[i].phone = e.target.value; setEditingTeam({...editingTeam, members: newMembers}); }} /></div>
                 </div>
               </div>
             ))}
             {(editingTeam.members || []).length < 3 && (
-              <button className="btn-secondary btn-sm" onClick={() => {
+              <button type="button" className="btn-secondary" onClick={() => {
                 setEditingTeam({...editingTeam, members: [...(editingTeam.members || []), { fullName: '', role: '', agenticAiRegId: '', universityRegNo: '', yearOfStudy: '', dob: '', phone: '', email: '' }]});
               }}>+ Add Member</button>
             )}
 
-            <div className="edit-actions" style={{ marginTop: '2rem' }}>
-               <button className="btn-secondary" onClick={() => setEditingTeam(null)}>Cancel</button>
-               <button className="btn-primary" onClick={saveTeamEdit}>Save Changes</button>
+            <div className="modal-actions">
+               <button type="button" className="btn-secondary" onClick={() => setEditingTeam(null)}>Cancel</button>
+               <button type="button" className="btn-primary" onClick={saveTeamEdit}>Save Changes</button>
             </div>
           </div>
         </div>
@@ -393,140 +626,60 @@ const AdminDashboard = () => {
 
       {/* Adding Modal */}
       {addingTeam && (
-        <div className="edit-modal-overlay">
-          <div className="edit-modal" style={{ maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div className="modal-overlay" onClick={() => setAddingTeam(false)}>
+          <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3>Add New Team</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-              <div className="edit-form-group">
+            
+            <div className="form-grid">
+              <div className="form-group">
                 <label>Team Name</label>
-                <input type="text" className="admin-input" value={newTeamData.team_name} onChange={e => setNewTeamData({...newTeamData, team_name: e.target.value})} />
+                <input value={newTeamData.team_name} onChange={e => setNewTeamData({...newTeamData, team_name: e.target.value})} />
               </div>
-              <div className="edit-form-group">
+              <div className="form-group">
                 <label>Official Team ID</label>
-                <input type="text" className="admin-input" value={newTeamData.officialTeamId} onChange={e => setNewTeamData({...newTeamData, officialTeamId: e.target.value})} />
+                <input value={newTeamData.officialTeamId} onChange={e => setNewTeamData({...newTeamData, officialTeamId: e.target.value})} />
               </div>
-              <div className="edit-form-group">
-                <label>Login ID</label>
-                <input type="text" className="admin-input" value={newTeamData.ai_id} onChange={e => setNewTeamData({...newTeamData, ai_id: e.target.value})} />
+              <div className="form-group">
+                <label>Login ID (AI Code)</label>
+                <input value={newTeamData.ai_id} onChange={e => setNewTeamData({...newTeamData, ai_id: e.target.value})} />
               </div>
-              <div className="edit-form-group">
+              <div className="form-group">
                 <label>Password</label>
-                <input type="text" className="admin-input" value={newTeamData.password} onChange={e => setNewTeamData({...newTeamData, password: e.target.value})} />
+                <input value={newTeamData.password} onChange={e => setNewTeamData({...newTeamData, password: e.target.value})} />
               </div>
             </div>
 
-            <h4>Team Members</h4>
+            <h3>Team Members</h3>
             {(newTeamData.members || []).map((m, i) => (
-              <div key={i} style={{ border: '1px solid #334155', padding: '1rem', marginBottom: '1rem', borderRadius: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <div key={i} className="member-card">
+                <div className="member-card-header">
                   <h5>Member {i + 1}</h5>
-                  <button className="btn-danger-sm" onClick={() => {
+                  <button className="btn-remove" onClick={() => {
                     const newMembers = [...newTeamData.members]; newMembers.splice(i, 1); setNewTeamData({...newTeamData, members: newMembers});
                   }}>Remove</button>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                  <input className="admin-input" placeholder="Full Name" value={m.fullName || ''} onChange={e => {
-                    const newMembers = [...newTeamData.members]; newMembers[i].fullName = e.target.value; setNewTeamData({...newTeamData, members: newMembers});
-                  }} />
-                  <input className="admin-input" placeholder="Role (e.g. Leader)" value={m.role || ''} onChange={e => {
-                    const newMembers = [...newTeamData.members]; newMembers[i].role = e.target.value; setNewTeamData({...newTeamData, members: newMembers});
-                  }} />
-                  <input className="admin-input" placeholder="University Reg No" value={m.universityRegNo || ''} onChange={e => {
-                    const newMembers = [...newTeamData.members]; newMembers[i].universityRegNo = e.target.value; setNewTeamData({...newTeamData, members: newMembers});
-                  }} />
-                  <input className="admin-input" placeholder="Email" value={m.email || ''} onChange={e => {
-                    const newMembers = [...newTeamData.members]; newMembers[i].email = e.target.value; setNewTeamData({...newTeamData, members: newMembers});
-                  }} />
-                  <input className="admin-input" placeholder="Phone" value={m.phone || ''} onChange={e => {
-                    const newMembers = [...newTeamData.members]; newMembers[i].phone = e.target.value; setNewTeamData({...newTeamData, members: newMembers});
-                  }} />
+                <div className="form-grid" style={{marginBottom: 0}}>
+                  <div className="form-group"><input placeholder="Full Name" value={m.fullName || ''} onChange={e => { const newMembers = [...newTeamData.members]; newMembers[i].fullName = e.target.value; setNewTeamData({...newTeamData, members: newMembers}); }} /></div>
+                  <div className="form-group"><input placeholder="Role" value={m.role || ''} onChange={e => { const newMembers = [...newTeamData.members]; newMembers[i].role = e.target.value; setNewTeamData({...newTeamData, members: newMembers}); }} /></div>
+                  <div className="form-group"><input placeholder="University Reg No" value={m.universityRegNo || ''} onChange={e => { const newMembers = [...newTeamData.members]; newMembers[i].universityRegNo = e.target.value; setNewTeamData({...newTeamData, members: newMembers}); }} /></div>
+                  <div className="form-group"><input placeholder="Email" value={m.email || ''} onChange={e => { const newMembers = [...newTeamData.members]; newMembers[i].email = e.target.value; setNewTeamData({...newTeamData, members: newMembers}); }} /></div>
+                  <div className="form-group"><input placeholder="Phone" value={m.phone || ''} onChange={e => { const newMembers = [...newTeamData.members]; newMembers[i].phone = e.target.value; setNewTeamData({...newTeamData, members: newMembers}); }} /></div>
                 </div>
               </div>
             ))}
             {(newTeamData.members || []).length < 3 && (
-              <button className="btn-secondary btn-sm" onClick={() => {
+              <button type="button" className="btn-secondary" onClick={() => {
                 setNewTeamData({...newTeamData, members: [...(newTeamData.members || []), { fullName: '', role: '', agenticAiRegId: '', universityRegNo: '', yearOfStudy: '', dob: '', phone: '', email: '' }]});
               }}>+ Add Member</button>
             )}
 
-            <div className="edit-actions" style={{ marginTop: '2rem' }}>
-              <button className="btn-secondary" onClick={() => setAddingTeam(false)}>Cancel</button>
-              <button className="btn-success" onClick={saveNewTeam}>Save</button>
+            <div className="modal-actions">
+              <button type="button" className="btn-secondary" onClick={() => setAddingTeam(false)}>Cancel</button>
+              <button type="button" className="btn-primary" onClick={saveNewTeam}>Save Team</button>
             </div>
           </div>
         </div>
       )}
-
-      {/* Main Table */}
-      <div className="leaderboard-section">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-          <h2>Live Team Monitoring</h2>
-          <input 
-            type="text" 
-            placeholder="Search teams or members..." 
-            className="admin-search-input"
-            value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th>Team</th>
-              <th>AI Code / Pass</th>
-              <th>Status</th>
-              <th>Progress</th>
-              <th>Score (Attempts)</th>
-              <th>Round 2</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTeams.length === 0 ? (
-              <tr><td colSpan="7" className="text-center">No teams found.</td></tr>
-            ) : (
-              filteredTeams.map(team => (
-                <tr key={team._id} className={team.disqualified ? 'row-dq' : (team.status === 'completed' ? 'row-completed' : '')}>
-                  <td>
-                    <strong>{team.team_name}</strong><br/>
-                    <span style={{fontSize: '0.8rem', color: '#94a3b8'}}>{team.officialTeamId}</span>
-                  </td>
-                  <td>
-                    <span className="mono">{team.ai_id}</span><br/>
-                    <span className="mono" style={{color: '#ef4444'}}>{team.password}</span>
-                  </td>
-                  <td><span className={`badge badge-${team.status}`}>{team.disqualified ? 'DISQUALIFIED' : team.status.toUpperCase()}</span></td>
-                  <td>
-                    <div className="progress-bar-container">
-                      <div className="progress-bar-fill" style={{ width: `${team.jigsaw_progress}%` }}></div>
-                      <span className="progress-text">{team.jigsaw_progress}%</span>
-                    </div>
-                  </td>
-                  <td>{team.score} pts <span style={{fontSize: '0.8rem', color: '#94a3b8'}}>({team.round1_attempts || 1})</span></td>
-                  <td>
-                    <button 
-                      className={`btn-sm ${team.qualifiedForRound2 ? 'btn-success' : 'btn-secondary'}`}
-                      onClick={() => toggleRound2Promotion(team._id)}
-                      disabled={team.disqualified}
-                    >
-                      {team.qualifiedForRound2 ? 'QUALIFIED' : 'PROMOTE'}
-                    </button>
-                  </td>
-                  <td>
-                    <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap'}}>
-                      <button className="btn-secondary btn-sm" onClick={() => setEditingTeam(team)}>Edit</button>
-                      <button className="btn-danger-sm" onClick={() => resetTeam(team._id)}>Restart</button>
-                      <button className="btn-danger-sm" style={{borderColor: '#f59e0b', color: '#f59e0b'}} onClick={() => disqualifyTeam(team._id)}>
-                        {team.disqualified ? 'Undo DQ' : 'DQ'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
     </div>
   );
 };

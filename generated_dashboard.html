@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ai SparkX Admin Dashboard</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&amp;family=JetBrains+Mono:wght@500&amp;family=Inter:wght@400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-surface": "#e4e0f2",
+                      "on-tertiary": "#003640",
+                      "on-tertiary-container": "#002f38",
+                      "surface-bright": "#393845",
+                      "primary-fixed": "#f0dbff",
+                      "on-error-container": "#ffdad6",
+                      "inverse-on-surface": "#302f3c",
+                      "surface": "#13121e",
+                      "tertiary-container": "#009eb9",
+                      "surface-dim": "#13121e",
+                      "on-primary-container": "#400071",
+                      "on-secondary": "#002e6a",
+                      "primary-container": "#b76dff",
+                      "surface-tint": "#ddb7ff",
+                      "surface-container-high": "#2a2836",
+                      "on-primary-fixed-variant": "#6900b3",
+                      "on-background": "#e4e0f2",
+                      "on-secondary-container": "#e6ecff",
+                      "secondary-container": "#0566d9",
+                      "secondary-fixed": "#d8e2ff",
+                      "on-tertiary-fixed": "#001f26",
+                      "surface-container-lowest": "#0e0d19",
+                      "inverse-primary": "#842bd2",
+                      "on-secondary-fixed": "#001a42",
+                      "surface-variant": "#353341",
+                      "on-surface": "#e4e0f2",
+                      "outline-variant": "#4d4354",
+                      "on-primary": "#490080",
+                      "tertiary-fixed": "#acedff",
+                      "on-primary-fixed": "#2c0051",
+                      "error": "#ffb4ab",
+                      "tertiary": "#4cd7f6",
+                      "on-surface-variant": "#cfc2d6",
+                      "surface-container-low": "#1b1a27",
+                      "surface-container-highest": "#353341",
+                      "on-secondary-fixed-variant": "#004395",
+                      "background": "#13121e",
+                      "primary": "#ddb7ff",
+                      "error-container": "#93000a",
+                      "primary-fixed-dim": "#ddb7ff",
+                      "secondary-fixed-dim": "#adc6ff",
+                      "surface-container": "#1f1e2b",
+                      "on-tertiary-fixed-variant": "#004e5c",
+                      "secondary": "#adc6ff",
+                      "tertiary-fixed-dim": "#4cd7f6",
+                      "on-error": "#690005",
+                      "outline": "#988d9f"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "margin-desktop": "40px",
+                      "base-unit": "8px",
+                      "container-max": "1440px",
+                      "margin-mobile": "16px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "display-lg-mobile": [
+                              "Space Grotesk"
+                      ],
+                      "label-caps": [
+                              "JetBrains Mono"
+                      ],
+                      "body-md": [
+                              "Inter"
+                      ],
+                      "headline-md": [
+                              "Space Grotesk"
+                      ],
+                      "body-lg": [
+                              "Inter"
+                      ],
+                      "display-lg": [
+                              "Space Grotesk"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg-mobile": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.01em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-caps": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.1em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-md": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-lg": [
+                              "18px",
+                              {
+                                      "lineHeight": "28px",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "display-lg": [
+                              "48px",
+                              {
+                                      "lineHeight": "56px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "700"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        body {
+            background-color: #0B0A16;
+            background-image: radial-gradient(circle at 50% 0%, rgba(183, 109, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 100% 100%, rgba(5, 102, 217, 0.1) 0%, transparent 50%);
+            background-attachment: fixed;
+            color: theme('colors.on-surface');
+        }
+
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-panel-hover:hover {
+            border-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .neon-glow-primary {
+            box-shadow: 0 0 15px rgba(221, 183, 255, 0.4);
+        }
+
+        .neon-text-primary {
+            text-shadow: 0 0 10px rgba(221, 183, 255, 0.5);
+        }
+
+        .progress-indicator {
+            box-shadow: 0 0 10px theme('colors.tertiary');
+        }
+    </style>
+</head>
+<body class="min-h-screen overflow-x-hidden antialiased flex selection:bg-primary-container selection:text-on-primary-container">
+<!-- TopNavBar -->
+<nav class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-margin-mobile md:px-margin-desktop py-4 bg-white/5 dark:bg-white/5 backdrop-blur-[30px] border-b border-white/10 shadow-[0_4px_30px_rgba(0,0,0,0.1)]">
+<div class="flex items-center gap-4">
+<span class="font-display-lg text-headline-md tracking-tighter text-primary dark:text-primary drop-shadow-[0_0_10px_rgba(221,183,255,0.3)]">Ai SparkX Admin</span>
+</div>
+<div class="hidden md:flex items-center gap-8">
+<div class="flex items-center gap-2 glass-panel px-4 py-2 rounded-full border-t border-white/20">
+<span class="material-symbols-outlined text-tertiary animate-pulse" style="font-variation-settings: 'FILL' 1;">radio_button_checked</span>
+<span class="font-label-caps text-label-caps text-on-surface">Live Status: Round 1 ACTIVE</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-on-surface-variant hover:text-primary hover:bg-white/10 rounded-full transition-all duration-300">
+<span class="material-symbols-outlined">sensors</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary hover:bg-white/10 rounded-full transition-all duration-300">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 text-on-surface-variant hover:text-primary hover:bg-white/10 rounded-full transition-all duration-300">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</nav>
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col fixed left-0 top-0 h-full pt-20 pb-8 z-40 bg-white/3 dark:bg-white/3 backdrop-blur-[40px] docked left-0 h-full w-64 border-r border-white/10 shadow-2xl transition-all duration-200 ease-in-out">
+<div class="px-6 py-8 border-b border-white/10">
+<div class="flex items-center gap-4 mb-2">
+<div class="w-10 h-10 rounded-full bg-surface-container-high border border-white/20 flex items-center justify-center overflow-hidden">
+<img class="object-cover w-full h-full" data-alt="A stylized, glowing avatar placeholder suitable for a high-tech admin interface. The avatar should feature a neon-accented cybernetic profile set against a deep, dark cosmic background, using an intense palette of electric blues and purples. It conveys advanced superuser status in a futuristic setting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDYtK2rv3N1PeckaidD761ZnbOs-NrTO58zoPKtOMEq_Yb6Q-iAk4uLkLb5fCBnkIRs910nhZyg9xNX1rwsgfPmZ7pD4Sn-x8rJYjfTYgXc0etKKqxe5VPaLalzR9dKoMq5m3f5xa2nnnfVK-WikgsyKN6Aj6FrNdeUmRba3wC-z_dywYTmTZ4cI0Lmx1Tu--pQQzx_Udm1St9cigpDa_-ijTB7iBqQO5PlNb_veQiH8JN6mPhFf_hh_DjwXv2MnzmdPbchCHzj5yk"/>
+</div>
+<div>
+<h3 class="font-headline-md text-body-md text-on-surface font-semibold">Admin Core</h3>
+<p class="font-label-caps text-label-caps text-tertiary">Superuser Access</p>
+</div>
+</div>
+</div>
+<nav class="flex-1 py-6 overflow-y-auto custom-scrollbar">
+<ul class="space-y-2">
+<li>
+<a class="bg-white/10 text-primary border-r-4 border-primary px-6 py-3 flex items-center gap-3 transition-colors" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">dashboard</span>
+<span class="font-body-md text-body-md font-medium">Dashboard</span>
+</a>
+</li>
+<li>
+<div class="px-6 py-2 mt-4 mb-2">
+<span class="font-label-caps text-[10px] tracking-widest text-on-surface-variant uppercase opacity-70">Database</span>
+</div>
+<a class="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">upload_file</span>
+<span class="font-body-md text-body-md">Upload Excel</span>
+</a>
+<a class="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">database</span>
+<span class="font-body-md text-body-md">Seed DB</span>
+</a>
+<a class="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-error/10 hover:text-error transition-colors" href="#">
+<span class="material-symbols-outlined text-error">delete_forever</span>
+<span class="font-body-md text-body-md text-error">Purge Data</span>
+</a>
+</li>
+<li>
+<div class="px-6 py-2 mt-4 mb-2">
+<span class="font-label-caps text-[10px] tracking-widest text-on-surface-variant uppercase opacity-70">Round Control</span>
+</div>
+<a class="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">rocket_launch</span>
+<span class="font-body-md text-body-md">Start Round</span>
+</a>
+<a class="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">lock</span>
+<span class="font-body-md text-body-md">Lock Input</span>
+</a>
+</li>
+<li>
+<div class="px-6 py-2 mt-4 mb-2">
+<span class="font-label-caps text-[10px] tracking-widest text-on-surface-variant uppercase opacity-70">Data</span>
+</div>
+<a class="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">download</span>
+<span class="font-body-md text-body-md">Export</span>
+</a>
+<a class="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-body-md text-body-md">System Logs</span>
+</a>
+</li>
+</ul>
+</nav>
+<div class="mt-auto pt-4 border-t border-white/10">
+<ul class="space-y-1">
+<li>
+<a class="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+</li>
+<li>
+<a class="text-on-surface-variant px-6 py-3 flex items-center gap-3 hover:bg-white/5 hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-body-md text-body-md">Support</span>
+</a>
+</li>
+</ul>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 w-full md:pl-64 pt-24 min-h-screen flex flex-col p-margin-mobile md:p-margin-desktop gap-8">
+<!-- Leaderboard Glass Container -->
+<section class="glass-panel rounded-xl p-6 md:p-8 flex-1 flex flex-col overflow-hidden relative shadow-[0_4px_30px_rgba(0,0,0,0.2)]">
+<!-- Decorative background elements inside the card -->
+<div class="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-[80px] -z-10 pointer-events-none"></div>
+<div class="absolute bottom-0 left-0 w-48 h-48 bg-secondary/5 rounded-full blur-[60px] -z-10 pointer-events-none"></div>
+<div class="flex justify-between items-center mb-8 border-b border-white/10 pb-4">
+<div>
+<h1 class="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface mb-2 neon-text-primary">Global Leaderboard</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Real-time performance metrics across all active AI models.</p>
+</div>
+<div class="hidden sm:flex gap-3">
+<button class="glass-panel hover:bg-white/10 px-4 py-2 rounded-lg text-on-surface font-body-md text-body-md flex items-center gap-2 transition-all">
+<span class="material-symbols-outlined text-[18px]">filter_list</span>
+                        Filter
+                    </button>
+<button class="bg-gradient-to-r from-primary-container to-secondary-container hover:from-primary hover:to-secondary text-white px-4 py-2 rounded-lg font-body-md text-body-md font-medium neon-glow-primary transition-all">
+                        Refresh Data
+                    </button>
+</div>
+</div>
+<!-- Table Container -->
+<div class="overflow-x-auto flex-1">
+<table class="w-full text-left border-collapse min-w-[800px]">
+<thead>
+<tr class="border-b border-white/10 text-on-surface-variant font-label-caps text-label-caps tracking-widest uppercase">
+<th class="py-4 px-4 font-medium w-1/4">Team Name</th>
+<th class="py-4 px-4 font-medium w-[15%]">AI ID</th>
+<th class="py-4 px-4 font-medium w-[15%]">Status</th>
+<th class="py-4 px-4 font-medium w-1/4">Processing Load</th>
+<th class="py-4 px-4 font-medium w-[10%] text-right">Score</th>
+<th class="py-4 px-4 font-medium w-[10%] text-center">Actions</th>
+</tr>
+</thead>
+<tbody class="font-body-md text-body-md text-on-surface divide-y divide-white/5">
+<!-- Row 1 -->
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="py-4 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary/20 flex items-center justify-center text-primary font-bold">N</div>
+<span class="font-semibold text-primary-fixed">Nebula Core</span>
+</div>
+</td>
+<td class="py-4 px-4 font-label-caps text-label-caps text-on-surface-variant">#AX-9921</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-tertiary/10 text-tertiary font-label-caps text-[10px] border border-tertiary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-tertiary animate-pulse shadow-[0_0_5px_theme('colors.tertiary')]"></span>
+                                    COMPUTING
+                                </span>
+</td>
+<td class="py-4 px-4">
+<div class="w-full bg-black/20 rounded-full h-1.5 border border-white/10 overflow-hidden">
+<div class="bg-gradient-to-r from-primary to-tertiary h-1.5 rounded-full progress-indicator relative" style="width: 85%">
+<div class="absolute top-0 right-0 bottom-0 w-4 bg-white/50 blur-[2px]"></div>
+</div>
+</div>
+</td>
+<td class="py-4 px-4 text-right font-label-caps text-label-caps text-primary text-[14px]">
+                                9,420
+                            </td>
+<td class="py-4 px-4">
+<div class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:text-secondary hover:bg-secondary/10 rounded transition-colors" title="Edit">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors" title="Disqualify">
+<span class="material-symbols-outlined text-[18px]">block</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="py-4 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-secondary/20 flex items-center justify-center text-secondary font-bold">Q</div>
+<span class="font-semibold">Quantum Shift</span>
+</div>
+</td>
+<td class="py-4 px-4 font-label-caps text-label-caps text-on-surface-variant">#AX-8843</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 text-primary font-label-caps text-[10px] border border-primary/20">
+<span class="w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_5px_theme('colors.primary')]"></span>
+                                    STANDBY
+                                </span>
+</td>
+<td class="py-4 px-4">
+<div class="w-full bg-black/20 rounded-full h-1.5 border border-white/10 overflow-hidden">
+<div class="bg-gradient-to-r from-primary to-secondary h-1.5 rounded-full relative" style="width: 45%"></div>
+</div>
+</td>
+<td class="py-4 px-4 text-right font-label-caps text-label-caps text-on-surface text-[14px]">
+                                7,105
+                            </td>
+<td class="py-4 px-4">
+<div class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:text-secondary hover:bg-secondary/10 rounded transition-colors" title="Edit">
+<span class="material-symbols-outlined text-[18px]">edit</span>
+</button>
+<button class="p-1.5 text-on-surface-variant hover:text-error hover:bg-error/10 rounded transition-colors" title="Disqualify">
+<span class="material-symbols-outlined text-[18px]">block</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-white/5 transition-colors group">
+<td class="py-4 px-4">
+<div class="flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-error/20 flex items-center justify-center text-error font-bold">V</div>
+<span class="font-semibold text-on-surface-variant">Void Seekers</span>
+</div>
+</td>
+<td class="py-4 px-4 font-label-caps text-label-caps text-on-surface-variant">#AX-1022</td>
+<td class="py-4 px-4">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-error/10 text-error font-label-caps text-[10px] border border-error/20">
+<span class="w-1.5 h-1.5 rounded-full bg-error shadow-[0_0_5px_theme('colors.error')]"></span>
+                                    HALTED
+                                </span>
+</td>
+<td class="py-4 px-4">
+<div class="w-full bg-black/20 rounded-full h-1.5 border border-white/10 overflow-hidden">
+<div class="bg-error h-1.5 rounded-full relative" style="width: 12%"></div>
+</div>
+</td>
+<td class="py-4 px-4 text-right font-label-caps text-label-caps text-on-surface-variant text-[14px]">
+                                1,200
+                            </td>
+<td class="py-4 px-4">
+<div class="flex justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+<button class="p-1.5 text-on-surface-variant hover:text-tertiary hover:bg-tertiary/10 rounded transition-colors" title="Restart">
+<span class="material-symbols-outlined text-[18px]">restart_alt</span>
+</button>
+</div>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="mt-6 flex justify-between items-center text-on-surface-variant font-label-caps text-label-caps border-t border-white/10 pt-4">
+<span>Showing 1-3 of 24 Teams</span>
+<div class="flex gap-2">
+<button class="p-1 hover:text-primary transition-colors disabled:opacity-50"><span class="material-symbols-outlined">chevron_left</span></button>
+<button class="p-1 hover:text-primary transition-colors"><span class="material-symbols-outlined">chevron_right</span></button>
+</div>
+</div>
+</section>
+</main>
+</body></html>

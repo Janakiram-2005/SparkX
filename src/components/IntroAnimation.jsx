@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import Hls from 'hls.js';
 
 const IntroAnimation = ({ onComplete }) => {
   const videoRef = useRef(null);
-  const [hlsReady, setHlsReady] = useState(false);
 
   useEffect(() => {
     if (videoRef.current) {
@@ -12,26 +11,28 @@ const IntroAnimation = ({ onComplete }) => {
       const videoSrc = '/intro-stream/intro.m3u8';
       const fallbackSrc = '/intro.mp4';
 
+      const attemptPlay = () => {
+        videoRef.current.play().catch(e => {
+          console.warn('Autoplay blocked by browser policy:', e);
+        });
+      };
+
       if (Hls.isSupported()) {
         const hls = new Hls();
         hls.loadSource(videoSrc);
         hls.attachMedia(videoRef.current);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          setHlsReady(true);
-          videoRef.current.play().catch(e => console.log('Autoplay blocked', e));
+          attemptPlay();
         });
         hls.on(Hls.Events.ERROR, (event, data) => {
           if (data.fatal) {
-            // fallback to normal mp4 if hls fails
             videoRef.current.src = fallbackSrc;
           }
         });
       } else if (videoRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-        // Native HLS (Safari)
         videoRef.current.src = videoSrc;
         videoRef.current.addEventListener('loadedmetadata', () => {
-          setHlsReady(true);
-          videoRef.current.play().catch(e => console.log('Autoplay blocked', e));
+          attemptPlay();
         });
       } else {
         videoRef.current.src = fallbackSrc;
@@ -39,9 +40,16 @@ const IntroAnimation = ({ onComplete }) => {
     }
   }, []);
 
+  const handleUnmute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = false;
+    }
+  };
+
   return (
-    <div style={styles.container}>
+    <div style={styles.container} onClick={handleUnmute}>
       <video 
+        id="intro-video-element"
         ref={videoRef}
         src="/intro.mp4"
         autoPlay
@@ -67,7 +75,7 @@ const styles = {
   video: {
     width: '100%',
     height: '100%',
-    objectFit: 'cover' // This ensures it scales up and fills the screen
+    objectFit: 'cover'
   }
 };
 

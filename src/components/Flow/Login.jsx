@@ -31,7 +31,7 @@ const Login = ({ onLoginSuccess }) => {
             ai_id: data.team.ai_id,
             sessionToken: data.team.sessionToken
           }));
-          onLoginSuccess(data.team);
+          onLoginSuccess(data.team, data.isRound2);
         }
       } else {
         setError(data.message || 'Invalid Login credentials');
