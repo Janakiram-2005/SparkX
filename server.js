@@ -100,11 +100,15 @@ app.post('/api/auth/login', async (req, res) => {
       $or: [
         { ai_id: { $regex: new RegExp(`^${ai_id}$`, 'i') } },
         { officialTeamId: { $regex: new RegExp(`^${ai_id}$`, 'i') } }
-      ],
-      password: password 
-    }).select('_id team_name ai_id status disqualified qualifiedForRound2 assignedPuzzleIndex officialTeamId sessionToken');
+      ]
+    }).select('_id team_name ai_id password status disqualified qualifiedForRound2 assignedPuzzleIndex officialTeamId sessionToken');
     
     if (team) {
+      // Compare password in JS to handle any accidental spaces in DB
+      if (team.password !== password && team.password.trim() !== password) {
+        return res.status(401).json({ success: false, message: 'Invalid credentials' });
+      }
+
       if (team.disqualified) {
         return res.json({ success: false, message: 'Your team has been disqualified.' });
       }

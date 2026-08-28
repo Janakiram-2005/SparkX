@@ -187,10 +187,6 @@ const JigsawPuzzle = ({ team, onComplete }) => {
           setShowWarning(true);
           setWarningText(`Unlocking in ${prev - 1}...`);
         }
-        if (phase === 'playing' && prev <= 6) {
-          setShowWarning(true);
-          setWarningText(`Time Up in ${prev - 1}...`);
-        }
         if (prev > 6) setShowWarning(false);
 
         // Point decay
@@ -234,11 +230,15 @@ const JigsawPuzzle = ({ team, onComplete }) => {
 
   const handleTimeUp = () => {
     setPhase('ended');
-    setPoints(0);
-    setShowWarning(true);
-    setWarningText("TIME IS UP!");
-    if (socket) socket.emit('puzzle_complete', { teamId: team.id, score: 0 });
-    setTimeout(() => onComplete(), 3000);
+    const finalScore = Math.floor(points * (matchedCount / 36));
+    setPoints(finalScore);
+    
+    if (socket) socket.emit('puzzle_complete', { teamId: team.id, score: finalScore });
+    
+    // Show flipped image for 2 seconds, then pop up the problem statement modal
+    setTimeout(() => {
+      setShowVictoryModal(true);
+    }, 2000);
   };
 
   const handleRaiseIssue = () => {
