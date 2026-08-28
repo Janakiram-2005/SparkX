@@ -237,9 +237,9 @@ app.post('/api/admin/timer/adjust', async (req, res) => {
 // --- SPOT REGISTRATION ROUTE ---
 app.post('/api/spot-registration', async (req, res) => {
   try {
-    const { team_name, login_id, members } = req.body;
+    const { team_name, members } = req.body;
     
-    if (!team_name || !login_id || !members || members.length === 0) {
+    if (!team_name || !members || members.length === 0) {
       return res.status(400).json({ success: false, message: 'Missing required fields.' });
     }
 
@@ -251,7 +251,6 @@ app.post('/api/spot-registration', async (req, res) => {
     // Duplicate Check
     const duplicateTeam = await Team.findOne({
       $or: [
-        { ai_id: login_id },
         { 'members.email': { $in: memberEmails } },
         { 'members.phone': { $in: memberPhones } },
         { 'members.universityRegNo': { $in: memberRegNos } },
@@ -260,16 +259,17 @@ app.post('/api/spot-registration', async (req, res) => {
     });
 
     if (duplicateTeam) {
-      return res.status(400).json({ success: false, message: 'This participant or team login ID is already registered. Please verify your details.' });
+      return res.status(400).json({ success: false, message: 'This participant is already registered. Please verify your details.' });
     }
 
-    // Auto-generate password (Use Member 1's Phone)
-    const password = members[0].phone;
-
-    // Generate unique Registration ID (officialTeamId)
+    // Generate unique Registration ID (officialTeamId) and Login ID (ai_id)
     const spotCount = await Team.countDocuments({ registration_type: 'SPOT' });
     const formattedCount = String(spotCount + 1).padStart(4, '0');
     const officialTeamId = `AISX-2026-SPOT-${formattedCount}`;
+    const autoLoginId = `SPOT${formattedCount}`;
+
+    // Auto-generate password (Use Member 1's Phone)
+    const password = members[0].phone;
 
     // Assign random puzzle
     const assignedIdx = Math.floor(Math.random() * DEFAULT_DATABASE.length);
@@ -277,7 +277,7 @@ app.post('/api/spot-registration', async (req, res) => {
 
     const newTeam = new Team({
       team_name,
-      ai_id: login_id,
+      ai_id: autoLoginId,
       password,
       officialTeamId,
       eventName: 'AI SparkX 2026 (Spot)',
@@ -296,6 +296,7 @@ app.post('/api/spot-registration', async (req, res) => {
     res.json({ 
       success: true, 
       registrationId: officialTeamId,
+      loginId: autoLoginId,
       teamName: team_name,
       memberCount: members.length
     });

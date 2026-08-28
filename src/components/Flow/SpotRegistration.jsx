@@ -6,7 +6,6 @@ const SpotRegistration = () => {
   const navigate = useNavigate();
   
   const [teamName, setTeamName] = useState('');
-  const [loginId, setLoginId] = useState('');
   
   // Member States
   const [members, setMembers] = useState([
@@ -52,7 +51,7 @@ const SpotRegistration = () => {
   };
 
   const validateForm = () => {
-    if (!teamName.trim() || !loginId.trim()) return "Team Name and Login ID are required.";
+    if (!teamName.trim()) return "Team Name is required.";
     
     for (let i = 0; i < members.length; i++) {
       const m = members[i];
@@ -96,7 +95,6 @@ const SpotRegistration = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           team_name: teamName.trim(),
-          login_id: loginId.trim(),
           members: members.map(m => ({
             fullName: m.fullName.trim(),
             agenticAiRegId: m.agenticAiRegId.trim(),
@@ -137,23 +135,23 @@ const SpotRegistration = () => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Full Name *</label>
-            <input type="text" value={m.fullName} onChange={e => handleMemberChange(index, 'fullName', e.target.value)} placeholder="John Doe" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
+            <input type="text" value={m.fullName} onChange={e => handleMemberChange(index, 'fullName', e.target.value)} placeholder="Full name" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>AI SparkX ID *</label>
-            <input type="text" value={m.agenticAiRegId} onChange={e => handleMemberChange(index, 'agenticAiRegId', e.target.value)} placeholder="AI-1234" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
+            <input type="text" value={m.agenticAiRegId} onChange={e => handleMemberChange(index, 'agenticAiRegId', e.target.value)} placeholder="VUCSE0XXXX" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>University Registration No. *</label>
-            <input type="text" value={m.universityRegNo} onChange={e => handleMemberChange(index, 'universityRegNo', e.target.value)} placeholder="21BXXXXXX" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
+            <input type="text" value={m.universityRegNo} onChange={e => handleMemberChange(index, 'universityRegNo', e.target.value)} placeholder="231FAXXXXX" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Email *</label>
-            <input type="email" value={m.email} onChange={e => handleMemberChange(index, 'email', e.target.value)} placeholder="john@example.com" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
+            <input type="email" value={m.email} onChange={e => handleMemberChange(index, 'email', e.target.value)} placeholder="regno@gmail.com" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Phone Number *</label>
-            <input type="tel" value={m.phone} onChange={e => handleMemberChange(index, 'phone', e.target.value.replace(/\D/g, ''))} placeholder="9876543210" maxLength={10} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
+            <input type="tel" value={m.phone} onChange={e => handleMemberChange(index, 'phone', e.target.value.replace(/\D/g, ''))} placeholder="XXXXXXXXXX" maxLength={10} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
           </div>
         </div>
       </div>
@@ -173,6 +171,10 @@ const SpotRegistration = () => {
             <div style={{ marginBottom: '0.5rem' }}>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Registration ID</span>
               <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#fff', fontFamily: 'monospace' }}>{successData.registrationId}</div>
+            </div>
+            <div style={{ marginBottom: '0.5rem' }}>
+              <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Login ID</span>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: '#a855f7', fontFamily: 'monospace' }}>{successData.loginId}</div>
             </div>
             <div style={{ marginBottom: '0.5rem' }}>
               <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Team Name</span>
@@ -211,10 +213,6 @@ const SpotRegistration = () => {
                 <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Team Name</span>
                 <strong>{teamName}</strong>
               </div>
-              <div style={{ marginBottom: '0.5rem' }}>
-                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Login ID</span>
-                <strong>{loginId}</strong>
-              </div>
               <div>
                 <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Members</span>
                 <strong>{members.length} {members.length === 1 ? 'Member' : 'Members'}</strong>
@@ -250,11 +248,6 @@ const SpotRegistration = () => {
               <div>
                 <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Team Name *</label>
                 <input type="text" value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="e.g. Neural Ninjas" style={{ width: '100%', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '1.1rem', boxSizing: 'border-box' }} required />
-              </div>
-              <div>
-                <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Login ID *</label>
-                <input type="text" value={loginId} onChange={e => setLoginId(e.target.value)} placeholder="e.g. neural_ninjas_123" style={{ width: '100%', padding: '1rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', fontSize: '1.1rem', boxSizing: 'border-box' }} required />
-                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>This ID will be used to log in to the puzzle system.</div>
               </div>
             </div>
           </div>
