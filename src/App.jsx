@@ -48,7 +48,7 @@ function App() {
       if (sessionData) {
         try {
           const { ai_id, sessionToken } = JSON.parse(sessionData);
-          const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/auth/verify`, {
+          const res = await fetch(`${import.meta.env.PROD ? '/sparkx' : 'http://localhost:6012'}/api/auth/verify`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ ai_id, sessionToken })
