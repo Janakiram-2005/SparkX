@@ -25,7 +25,8 @@ const teamSchema = new mongoose.Schema({
   round1_attempts: { type: Number, default: 0 },
   assignedPuzzleIndex: { type: Number, default: -1 },
   sessionToken: { type: String, default: "" },
-  tabSwitchCount: { type: Number, default: 0 }
+  tabSwitchCount: { type: Number, default: 0 },
+  registration_type: { type: String, default: 'ONLINE' }
 }, { timestamps: true });
 
 export default mongoose.model('Team', teamSchema);

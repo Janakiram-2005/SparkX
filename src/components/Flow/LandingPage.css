@@ -156,3 +156,14 @@ header nav a:hover {
 .cube__face--left   { transform: rotateY(-90deg) translateZ(110px); }
 .cube__face--top    { transform: rotateX( 90deg) translateZ(110px); }
 .cube__face--bottom { transform: rotateX(-90deg) translateZ(110px); }
+
+/* --- ROUND CARDS HOVER EFFECT --- */
+.round-card {
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.4s ease, border-color 0.4s ease !important;
+}
+
+.round-card:hover {
+  transform: translateY(-12px) !important;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(168, 85, 247, 0.3) !important;
+  border-color: rgba(168, 85, 247, 0.5) !important;
+}

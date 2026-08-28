@@ -12,6 +12,7 @@ import ResultsReveal from './components/Flow/ResultsReveal';
 import FeedbackForm from './components/Flow/FeedbackForm';
 import RoundTwo from './components/Flow/RoundTwo';
 import Leaderboard from './components/Flow/Leaderboard';
+import SpotRegistration from './components/Flow/SpotRegistration';
 
 function App() {
   const [adminAuthenticated, setAdminAuthenticated] = useState(false);
@@ -98,6 +99,7 @@ function App() {
         } />
 
         <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/spot-registration" element={<SpotRegistration />} />
 
         <Route path="/login" element={
           <Login onLoginSuccess={(t, isRound2) => {

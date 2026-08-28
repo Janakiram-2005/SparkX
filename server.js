@@ -234,6 +234,78 @@ app.post('/api/admin/timer/adjust', async (req, res) => {
   }
 });
 
+// --- SPOT REGISTRATION ROUTE ---
+app.post('/api/spot-registration', async (req, res) => {
+  try {
+    const { team_name, login_id, members } = req.body;
+    
+    if (!team_name || !login_id || !members || members.length === 0) {
+      return res.status(400).json({ success: false, message: 'Missing required fields.' });
+    }
+
+    const memberEmails = members.map(m => m.email).filter(e => e);
+    const memberPhones = members.map(m => m.phone).filter(p => p);
+    const memberRegNos = members.map(m => m.universityRegNo).filter(r => r);
+    const memberAiIds = members.map(m => m.agenticAiRegId).filter(a => a);
+
+    // Duplicate Check
+    const duplicateTeam = await Team.findOne({
+      $or: [
+        { ai_id: login_id },
+        { 'members.email': { $in: memberEmails } },
+        { 'members.phone': { $in: memberPhones } },
+        { 'members.universityRegNo': { $in: memberRegNos } },
+        { 'members.agenticAiRegId': { $in: memberAiIds } }
+      ]
+    });
+
+    if (duplicateTeam) {
+      return res.status(400).json({ success: false, message: 'This participant or team login ID is already registered. Please verify your details.' });
+    }
+
+    // Auto-generate password (Use Member 1's Phone)
+    const password = members[0].phone;
+
+    // Generate unique Registration ID (officialTeamId)
+    const spotCount = await Team.countDocuments({ registration_type: 'SPOT' });
+    const formattedCount = String(spotCount + 1).padStart(4, '0');
+    const officialTeamId = `AISX-2026-SPOT-${formattedCount}`;
+
+    // Assign random puzzle
+    const assignedIdx = Math.floor(Math.random() * DEFAULT_DATABASE.length);
+    const puzzleBase = DEFAULT_DATABASE[assignedIdx];
+
+    const newTeam = new Team({
+      team_name,
+      ai_id: login_id,
+      password,
+      officialTeamId,
+      eventName: 'AI SparkX 2026 (Spot)',
+      members,
+      assignedPuzzleIndex: assignedIdx,
+      puzzle: puzzleBase.puzzle,
+      problemStatement: puzzleBase.problemStatement,
+      registration_type: 'SPOT'
+    });
+
+    await newTeam.save();
+
+    // Trigger UI updates
+    io.to('admin_room').emit('team_update'); 
+
+    res.json({ 
+      success: true, 
+      registrationId: officialTeamId,
+      teamName: team_name,
+      memberCount: members.length
+    });
+    
+  } catch (error) {
+    console.error('Spot registration error:', error);
+    res.status(500).json({ success: false, message: 'Registration could not be completed. Please try again.' });
+  }
+});
+
 // Admin Route: Add Single Team
 app.post('/api/admin/teams/add', async (req, res) => {
   try {
