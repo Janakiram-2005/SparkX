@@ -143,12 +143,15 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
       };
   }, []);
 
+  const base = import.meta.env.BASE_URL || '/';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+
   return (
     <div className="landing-layout">
       {/* Scroll Watermark */}
       <img 
         ref={watermarkRef}
-        src="/sparkx-brush-logo.png" 
+        src={`${cleanBase}sparkx-brush-logo.png`} 
         className="watermark-bg" 
         alt="AI SparkX Watermark" 
         style={{
@@ -175,8 +178,8 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
 
         <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100vw', margin: '0 calc(-50vw + 50%)', padding: '15px 2rem', boxSizing: 'border-box', background: 'rgba(11,10,22,0.75)', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(168,85,247,0.2)' }}>
           <div className="dept-logos" style={{ flex: 1, display: 'flex', justifyContent: 'flex-start', alignItems: 'center', gap: '1rem' }}>
-            <img src="/logo.webp" alt="Vignan Logo" style={{ height: '90px', objectFit: 'contain' }} />
-            <img src="/1.png" alt="CSE Logo" style={{ height: '90px', objectFit: 'contain' }} />
+            <img src={`${cleanBase}logo.webp`} alt="Vignan Logo" style={{ height: '90px', objectFit: 'contain' }} />
+            <img src={`${cleanBase}1.png`} alt="CSE Logo" style={{ height: '90px', objectFit: 'contain' }} />
           </div>
           <div style={{ flex: 1, textAlign: 'center', fontWeight: 900, fontFamily: 'Space Grotesk, sans-serif', fontSize: '2rem', letterSpacing: '4px', color: '#fff', textShadow: '0 0 15px rgba(168, 85, 247, 0.8)', whiteSpace: 'nowrap' }}>
             AGENTIC AI DAY <span style={{ color: 'var(--purple-neon)' }}>2026</span>
@@ -210,7 +213,7 @@ const LandingPage = ({ onTeamAuthenticated, showLogin, onShowLogin }) => {
 
             <div className="hero-visual" style={{ position: 'relative', zIndex: 2 }}>
               <video 
-                src="/hero-cube.mp4" 
+                src={`${cleanBase}hero-cube.mp4`} 
                 autoPlay 
                 loop 
                 muted 

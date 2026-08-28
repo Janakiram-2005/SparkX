@@ -45,8 +45,10 @@ export default async function generateAIAgenticImage(teamIdStr, puzzleData = nul
 
   // Map the puzzle to available images using assignedIdx (which is randomly assigned to the team)
   // This ensures the image choice is fully random from the available files, but consistent for the same puzzle.
+  const base = import.meta.env.BASE_URL || '/';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
   const imageId = (assignedIdx % imageCount) + 1;
-  const imagePath = `/puzzles/images/${imageId}.jpg`;
+  const imagePath = `${cleanBase}puzzles/images/${imageId}.jpg`;
 
   try {
     const img = await new Promise((resolve, reject) => {

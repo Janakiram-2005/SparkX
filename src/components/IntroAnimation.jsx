@@ -3,13 +3,14 @@ import Hls from 'hls.js';
 
 const IntroAnimation = ({ onComplete }) => {
   const videoRef = useRef(null);
+  const base = import.meta.env.BASE_URL || '/';
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  const videoSrc = `${cleanBase}intro-stream/intro.m3u8`;
+  const fallbackSrc = `${cleanBase}intro.mp4`;
 
   useEffect(() => {
     if (videoRef.current) {
       videoRef.current.playbackRate = 2.0;
-
-      const videoSrc = '/intro-stream/intro.m3u8';
-      const fallbackSrc = '/intro.mp4';
 
       const attemptPlay = () => {
         videoRef.current.play().catch(e => {
@@ -38,7 +39,7 @@ const IntroAnimation = ({ onComplete }) => {
         videoRef.current.src = fallbackSrc;
       }
     }
-  }, []);
+  }, [videoSrc, fallbackSrc]);
 
   const handleUnmute = () => {
     if (videoRef.current) {
@@ -48,14 +49,45 @@ const IntroAnimation = ({ onComplete }) => {
 
   return (
     <div style={styles.container} onClick={handleUnmute}>
+      {/* Skip Button */}
+      <button 
+        onClick={(e) => {
+          e.stopPropagation();
+          onComplete();
+        }}
+        style={{
+          position: 'absolute',
+          top: '24px',
+          right: '24px',
+          zIndex: 100,
+          background: 'rgba(255, 255, 255, 0.15)',
+          backdropFilter: 'blur(10px)',
+          border: '1px solid rgba(255, 255, 255, 0.3)',
+          color: '#fff',
+          padding: '8px 20px',
+          borderRadius: '30px',
+          fontSize: '14px',
+          fontWeight: '600',
+          cursor: 'pointer',
+          fontFamily: '"Space Grotesk", sans-serif',
+          letterSpacing: '1px'
+        }}
+      >
+        SKIP INTRO &rarr;
+      </button>
+
       <video 
         id="intro-video-element"
         ref={videoRef}
-        src="/intro.mp4"
+        src={fallbackSrc}
         autoPlay
         muted
         playsInline
         onEnded={onComplete}
+        onError={() => {
+          console.warn('Video failed to load, skipping intro');
+          onComplete();
+        }}
         style={styles.video}
       />
       
