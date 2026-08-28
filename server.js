@@ -465,16 +465,20 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
       const row = data[i];
       
       const teamNameKey = findKey(row, 'team name', 'team nan');
-      const teamName = teamNameKey ? row[teamNameKey] : `Team ${i+1}`;
+      const teamName = teamNameKey && row[teamNameKey] ? String(row[teamNameKey]).trim() : `Team ${i+1}`;
       
       const teamIdKey = findKey(row, 'team id', 'official team', 'registration number');
-      const officialTeamId = teamIdKey ? String(row[teamIdKey]) : '';
+      let officialTeamId = teamIdKey && row[teamIdKey] ? String(row[teamIdKey]).trim() : '';
+      if (officialTeamId === '0' || officialTeamId.toLowerCase() === 'undefined') officialTeamId = '';
       
       const aiIdKey = findKey(row, 'leader ai', 'ai id', 'login id', 'vucse id');
-      const aiId = aiIdKey ? String(row[aiIdKey]).trim() : String(i + 1);
+      let aiId = aiIdKey && row[aiIdKey] ? String(row[aiIdKey]).trim() : '';
+      if (!aiId || aiId === '0' || aiId.toLowerCase() === 'undefined') {
+        aiId = `AIX${Date.now()}${i}`; // Guarantee uniqueness
+      }
       
       const passKey = findKey(row, 'password');
-      const password = passKey ? String(row[passKey]).trim() : `AIX${Math.floor(100 + Math.random() * 900)}`;
+      let password = passKey && row[passKey] ? String(row[passKey]).trim() : `AIX${Math.floor(100 + Math.random() * 900)}`;
 
       // Check if duplicate
       const existing = await Team.findOne({ 
