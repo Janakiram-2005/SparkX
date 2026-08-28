@@ -19,6 +19,7 @@ const SpotRegistration = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successData, setSuccessData] = useState(null);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
   const handleMemberChange = (index, field, value) => {
     const updated = [...members];
@@ -72,7 +73,7 @@ const SpotRegistration = () => {
     return null;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setError('');
     
@@ -82,6 +83,11 @@ const SpotRegistration = () => {
       return;
     }
 
+    setShowConfirmation(true);
+  };
+
+  const executeRegistration = async () => {
+    setShowConfirmation(false);
     setIsSubmitting(true);
     
     try {
@@ -192,6 +198,36 @@ const SpotRegistration = () => {
   return (
     <div className="stitch-layout" style={{ minHeight: '100vh', height: 'auto', overflowY: 'auto', padding: '2rem 1rem' }}>
       <div className="stitch-bg"></div>
+
+      {showConfirmation && (
+        <div style={{ position: 'fixed', inset: 0, backgroundColor: 'rgba(0,0,0,0.8)', zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', backdropFilter: 'blur(5px)' }}>
+          <div style={{ background: 'rgba(15,23,42,0.95)', padding: '2.5rem', borderRadius: '20px', border: '1px solid rgba(168, 85, 247, 0.5)', maxWidth: '400px', width: '90%', textAlign: 'center', color: '#fff', boxShadow: '0 0 30px rgba(168, 85, 247, 0.2)' }}>
+            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>⚠️</div>
+            <h3 style={{ marginTop: 0, color: 'var(--orange)', fontSize: '1.5rem', fontFamily: 'Space Grotesk' }}>Confirm Details</h3>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>Are you sure you want to submit? Please ensure all details are correct as they cannot be changed later.</p>
+            
+            <div style={{ background: 'rgba(0,0,0,0.5)', padding: '1rem', borderRadius: '12px', marginBottom: '2rem', textAlign: 'left', fontSize: '0.95rem' }}>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Team Name</span>
+                <strong>{teamName}</strong>
+              </div>
+              <div style={{ marginBottom: '0.5rem' }}>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Login ID</span>
+                <strong>{loginId}</strong>
+              </div>
+              <div>
+                <span style={{ color: 'var(--text-muted)', display: 'block', fontSize: '0.8rem' }}>Members</span>
+                <strong>{members.length} {members.length === 1 ? 'Member' : 'Members'}</strong>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button onClick={() => setShowConfirmation(false)} className="btn-secondary" style={{ flex: 1, background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#fff' }}>Cancel</button>
+              <button onClick={executeRegistration} className="btn-primary" style={{ flex: 1 }}>Confirm</button>
+            </div>
+          </div>
+        </div>
+      )}
       
       <div style={{ maxWidth: '600px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
         <header style={{ textAlign: 'center', marginBottom: '3rem' }}>
