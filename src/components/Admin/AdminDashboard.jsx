@@ -154,6 +154,9 @@ const AdminDashboard = () => {
     } finally {
       setIsUploading(false);
       setFile(null);
+      if (document.getElementById('upload-excel')) {
+        document.getElementById('upload-excel').value = '';
+      }
     }
   };
 
@@ -450,7 +453,7 @@ const AdminDashboard = () => {
                 100% { width: 95%; }
               }
             `}</style>
-            <input type="file" accept=".xlsx, .xls" style={{display: 'none'}} id="upload-excel" onChange={handleFileUpload} />
+            <input type="file" accept=".xlsx, .xls, .csv" style={{display: 'none'}} id="upload-excel" onChange={(e) => setFile(e.target.files[0])} />
             <button onClick={() => document.getElementById('upload-excel').click()} className="sidebar-btn btn-accent" disabled={isUploading} style={{ position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '10px' }}>
                 <i className={`fa-solid ${isUploading ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
