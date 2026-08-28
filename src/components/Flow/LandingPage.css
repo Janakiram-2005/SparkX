@@ -22,7 +22,7 @@
   left: 50%;
   transform: translateX(-50%);
   width: 80%;
-  opacity: 0.05;
+  opacity: 0.4;
   z-index: 0;
   pointer-events: none;
 }
