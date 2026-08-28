@@ -474,7 +474,8 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
       const aiIdKey = findKey(row, 'leader ai', 'ai id', 'login id', 'vucse id');
       let aiId = aiIdKey && row[aiIdKey] ? String(row[aiIdKey]).trim() : '';
       if (!aiId || aiId === '0' || aiId.toLowerCase() === 'undefined') {
-        aiId = `AIX${Date.now()}${i}`; // Guarantee uniqueness
+        const shortRand = Math.floor(1000 + Math.random() * 9000); // 4 digit random
+        aiId = `AIX${shortRand}${i}`; 
       }
       
       const passKey = findKey(row, 'password');
