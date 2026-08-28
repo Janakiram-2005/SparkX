@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import io from 'socket.io-client';
 
-const socket = io(import.meta.env.PROD ? '/sparkx' : 'http://localhost:5000', {
+const socket = io(import.meta.env.PROD ? '/sparkx' : 'http://localhost:6012', {
   path: '/sparkx/socket.io'
 });
 
@@ -17,7 +17,7 @@ const PostRoundWaitingRoom = ({ team }) => {
     // Fetch initial state
     const fetchState = async () => {
       try {
-        const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/state`);
+        const res = await fetch(`${import.meta.env.PROD ? '/sparkx' : 'http://localhost:6012'}/api/admin/state`);
         const data = await res.json();
         if (data.success) {
           setGlobalState({
