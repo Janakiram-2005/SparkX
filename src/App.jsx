@@ -13,6 +13,7 @@ import FeedbackForm from './components/Flow/FeedbackForm';
 import RoundTwo from './components/Flow/RoundTwo';
 import Leaderboard from './components/Flow/Leaderboard';
 import SpotRegistration from './components/Flow/SpotRegistration';
+import PostRoundWaitingRoom from './components/Flow/PostRoundWaitingRoom';
 
 function App() {
   const [adminAuthenticated, setAdminAuthenticated] = useState(false);
@@ -58,6 +59,8 @@ function App() {
             setTeam(data.team);
             if (data.isRound2 && window.location.pathname !== '/round2' && window.location.pathname !== '/adminsparkx1') {
               navigate('/round2');
+            } else if (data.team.status === 'completed' && window.location.pathname !== '/waiting' && window.location.pathname !== '/adminsparkx1') {
+              navigate('/waiting');
             }
           } else {
             localStorage.removeItem('sparkx_session');
@@ -106,6 +109,8 @@ function App() {
             setTeam(t);
             if (isRound2) {
               navigate('/round2');
+            } else if (t.status === 'completed') {
+              navigate('/waiting');
             } else {
               navigate('/instructions');
             }
@@ -132,7 +137,11 @@ function App() {
         } />
 
         <Route path="/feedback" element={
-          team ? <FeedbackForm team={team} /> : <Navigate to="/login" replace />
+          team ? <FeedbackForm team={team} onComplete={() => navigate('/waiting')} /> : <Navigate to="/login" replace />
+        } />
+        
+        <Route path="/waiting" element={
+          team ? <PostRoundWaitingRoom team={team} /> : <Navigate to="/login" replace />
         } />
         
         <Route path="/round2" element={

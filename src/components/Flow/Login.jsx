@@ -11,10 +11,6 @@ const Login = ({ onLoginSuccess }) => {
     setError('');
     
     try {
-      if (aiId === '1' && password === '123') {
-        onLoginSuccess({ id: '1', name: 'Test Team 1' });
-        return;
-      }
 
       const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/auth/login`, {
         method: 'POST',

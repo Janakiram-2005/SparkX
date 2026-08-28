@@ -9,6 +9,8 @@ const AdminDashboard = () => {
   const [file, setFile] = useState(null);
   const [isRoundActive, setIsRoundActive] = useState(false);
   const [isRound2Active, setIsRound2Active] = useState(false);
+  const [isResultsAnnounced, setIsResultsAnnounced] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
   const [round2TimerInput, setRound2TimerInput] = useState(45);
   const [socket, setSocket] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -51,12 +53,18 @@ const AdminDashboard = () => {
       ));
     });
 
-    newSocket.on('state_changed', ({ round1_active }) => {
-      setIsRoundActive(round1_active);
+    newSocket.on('state_changed', ({ round1_active, round2_active, results_announced }) => {
+      if (round1_active !== undefined) setIsRoundActive(round1_active);
+      if (round2_active !== undefined) setIsRound2Active(round2_active);
+      if (results_announced !== undefined) setIsResultsAnnounced(results_announced);
     });
     
     newSocket.on('round2_state_update', ({ active, endTime }) => {
       setIsRound2Active(active);
+    });
+    
+    newSocket.on('global_state_update', (state) => {
+      if (state.results_announced !== undefined) setIsResultsAnnounced(state.results_announced);
     });
 
     newSocket.on('team_update', (updatedTeam) => {
@@ -91,6 +99,7 @@ const AdminDashboard = () => {
     if (data.success && data.state) {
       setIsRoundActive(Boolean(data.state.round1_active));
       setIsRound2Active(Boolean(data.state.round2_active));
+      setIsResultsAnnounced(Boolean(data.state.results_announced));
     }
   };
 
@@ -120,6 +129,7 @@ const AdminDashboard = () => {
 
   const handleFileUpload = async () => {
     if (!file) return;
+    setIsUploading(true);
     const formData = new FormData();
     formData.append('file', file);
     try {
@@ -140,10 +150,13 @@ const AdminDashboard = () => {
         alert(data.message || 'Upload failed');
       }
     } catch (err) {
-      alert('Upload failed');
+      alert('Upload failed due to network error');
+    } finally {
+      setIsUploading(false);
+      setFile(null);
     }
-    setFile(null);
   };
+
 
   const seedData = async () => {
     if(!window.confirm('Seed database with temporary teams?')) return;
@@ -186,6 +199,27 @@ const AdminDashboard = () => {
       const wb = xlsx.utils.book_new();
       xlsx.utils.book_append_sheet(wb, ws, "Template");
       xlsx.writeFile(wb, "AI_SparkX_Team_Template.xlsx");
+    });
+  };
+
+  const exportTeams = () => {
+    import('xlsx').then(xlsx => {
+      const data = teams.map(t => ({
+        'Team Name': t.team_name,
+        'Login ID (AI ID)': t.ai_id,
+        'Password': t.password,
+        'Status': t.status,
+        'Progress %': t.jigsaw_progress,
+        'Score': t.score,
+        'Round 1 Attempts': t.round1_attempts,
+        'Disqualified': t.disqualified ? 'YES' : 'NO',
+        'Qualified Round 2': t.qualifiedForRound2 ? 'YES' : 'NO',
+        'Registration Number': t.officialTeamId
+      }));
+      const ws = xlsx.utils.json_to_sheet(data);
+      const wb = xlsx.utils.book_new();
+      xlsx.utils.book_append_sheet(wb, ws, "Teams Data");
+      xlsx.writeFile(wb, "AI_SparkX_Teams_Export.xlsx");
     });
   };
 
@@ -245,6 +279,21 @@ const AdminDashboard = () => {
       if (data.success) setIsRound2Active(data.state.round2_active);
     } catch (err) {
       alert('Failed to toggle round 2 state');
+    }
+  };
+
+  const toggleResultsAnnounced = async () => {
+    if(!window.confirm(`Are you sure you want to ${isResultsAnnounced ? 'HIDE' : 'ANNOUNCE'} Round 1 Results to all teams in the Waiting Room?`)) return;
+    try {
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/state/results`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ announced: !isResultsAnnounced })
+      });
+      const data = await res.json();
+      if (data.success) setIsResultsAnnounced(data.state.results_announced);
+    } catch (err) {
+      alert('Failed to toggle results state');
     }
   };
 
@@ -377,6 +426,10 @@ const AdminDashboard = () => {
             <span className={`status-dot ${isRound2Active ? 'active' : ''}`}></span>
             Round 2 {isRound2Active ? 'ACTIVE' : 'LOCKED'}
           </div>
+          <div className="status-badge" style={{ background: isResultsAnnounced ? 'rgba(74, 222, 128, 0.1)' : 'rgba(148, 163, 184, 0.1)' }}>
+            <span className={`status-dot ${isResultsAnnounced ? 'active' : ''}`} style={{ background: isResultsAnnounced ? '#4ade80' : '#94a3b8', boxShadow: isResultsAnnounced ? '0 0 10px #4ade80' : 'none' }}></span>
+            Results {isResultsAnnounced ? 'LIVE' : 'HIDDEN'}
+          </div>
         </div>
       </nav>
 
@@ -389,10 +442,23 @@ const AdminDashboard = () => {
           <div className="sidebar-section">
             <h3>Database Management</h3>
             
+            <style>{`
+              @keyframes fakeProgress {
+                0% { width: 0%; }
+                20% { width: 40%; }
+                80% { width: 80%; }
+                100% { width: 95%; }
+              }
+            `}</style>
             <input type="file" accept=".xlsx, .xls" style={{display: 'none'}} id="upload-excel" onChange={handleFileUpload} />
-            <button onClick={() => document.getElementById('upload-excel').click()} className="sidebar-btn btn-accent">
-              <i className="fa-solid fa-file-excel"></i>
-              Import Excel
+            <button onClick={() => document.getElementById('upload-excel').click()} className="sidebar-btn btn-accent" disabled={isUploading} style={{ position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <i className={`fa-solid ${isUploading ? 'fa-spinner fa-spin' : 'fa-file-excel'}`}></i>
+                {isUploading ? 'Processing...' : 'Import Excel'}
+              </div>
+              {isUploading && (
+                <div style={{ position: 'absolute', left: 0, top: 0, height: '100%', background: 'rgba(255,255,255,0.2)', animation: 'fakeProgress 3s forwards' }}></div>
+              )}
             </button>
             <button onClick={downloadTemplate} className="sidebar-btn" style={{background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', border: '1px solid rgba(59, 130, 246, 0.3)', marginTop: '0.5rem'}}>
               <i className="fa-solid fa-download"></i>
@@ -407,6 +473,11 @@ const AdminDashboard = () => {
             <button onClick={() => navigate('/admin/add-team')} className="sidebar-btn btn-accent">
               <i className="fa-solid fa-user-plus"></i>
               Add Team
+            </button>
+            
+            <button onClick={exportTeams} className="sidebar-btn btn-accent" style={{background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)'}}>
+              <i className="fa-solid fa-file-export"></i>
+              Export Teams Data
             </button>
             
             <button onClick={factoryReset} className="sidebar-btn" style={{background: 'rgba(234, 179, 8, 0.2)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.5)'}}>
@@ -425,6 +496,10 @@ const AdminDashboard = () => {
             <button onClick={toggleRoundState} className={`sidebar-btn ${isRoundActive ? 'btn-danger-link' : 'btn-accent'}`}>
               <i className={`fa-solid ${isRoundActive ? 'fa-lock' : 'fa-rocket'}`}></i>
               {isRoundActive ? 'Lock Round 1' : 'Start Round 1'}
+            </button>
+            <button onClick={toggleResultsAnnounced} className={`sidebar-btn ${isResultsAnnounced ? 'btn-danger-link' : 'btn-accent'}`} style={{ marginTop: '0.5rem', background: isResultsAnnounced ? 'rgba(239, 68, 68, 0.1)' : 'rgba(74, 222, 128, 0.1)', color: isResultsAnnounced ? '#ef4444' : '#4ade80', border: isResultsAnnounced ? '1px solid rgba(239,68,68,0.3)' : '1px solid rgba(74,222,128,0.3)' }}>
+              <i className={`fa-solid ${isResultsAnnounced ? 'fa-eye-slash' : 'fa-bullhorn'}`}></i>
+              {isResultsAnnounced ? 'Hide R1 Results' : 'Announce R1 Results'}
             </button>
           </div>
 

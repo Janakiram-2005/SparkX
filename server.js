@@ -107,10 +107,11 @@ app.post('/api/auth/login', async (req, res) => {
   password = password.trim();
 
   try {
+    const escapedId = ai_id.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
     const team = await Team.findOne({ 
       $or: [
-        { ai_id: { $regex: new RegExp(`^${ai_id}$`, 'i') } },
-        { officialTeamId: { $regex: new RegExp(`^${ai_id}$`, 'i') } }
+        { ai_id: { $regex: new RegExp(`^${escapedId}$`, 'i') } },
+        { officialTeamId: { $regex: new RegExp(`^${escapedId}$`, 'i') } }
       ]
     }).select('_id team_name ai_id password status disqualified qualifiedForRound2 assignedPuzzleIndex officialTeamId sessionToken');
     
@@ -126,11 +127,7 @@ app.post('/api/auth/login', async (req, res) => {
 
       const state = await SystemState.findOne();
       const isRound2Active = state ? state.round2_active : false;
-
-      // Already attempted check
-      if (team.status === 'completed' && !isRound2Active) {
-        return res.json({ success: false, message: 'Already Test Attempted. Contact Co-Ordinator for any issues.' });
-      }
+      const results_announced = state ? state.results_announced : false;
 
       if (isRound2Active && !team.qualifiedForRound2) {
         return res.json({ success: false, message: 'You are not qualified for Round 2.' });
@@ -145,7 +142,7 @@ app.post('/api/auth/login', async (req, res) => {
       const teamObj = team.toObject();
       teamObj.id = teamObj._id; 
       teamObj.sessionToken = sessionToken; // send to frontend
-      res.json({ success: true, team: teamObj, isRound2: isRound2Active });
+      res.json({ success: true, team: teamObj, isRound2: isRound2Active, results_announced });
     } else {
       res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
@@ -169,6 +166,7 @@ app.post('/api/auth/verify', async (req, res) => {
 
       const state = await SystemState.findOne();
       const isRound2Active = state ? state.round2_active : false;
+      const results_announced = state ? state.results_announced : false;
 
       if (isRound2Active && !team.qualifiedForRound2) {
         return res.json({ success: false, message: 'You are not qualified for Round 2.' });
@@ -177,7 +175,7 @@ app.post('/api/auth/verify', async (req, res) => {
       const teamObj = team.toObject();
       teamObj.id = teamObj._id;
       teamObj.sessionToken = sessionToken;
-      res.json({ success: true, team: teamObj, isRound2: isRound2Active });
+      res.json({ success: true, team: teamObj, isRound2: isRound2Active, results_announced });
     } else {
       res.status(401).json({ success: false, message: 'Invalid or expired session' });
     }
@@ -234,6 +232,19 @@ app.get('/api/admin/teams/export', async (req, res) => {
 app.get('/api/admin/state', async (req, res) => {
   try {
     const state = await SystemState.findOne();
+    res.json({ success: true, state });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// Admin Route: Toggle Results Announced
+app.post('/api/admin/state/results', async (req, res) => {
+  const { announced } = req.body;
+  try {
+    const state = await SystemState.findOneAndUpdate({}, { results_announced: announced }, { new: true, upsert: true });
+    io.to('admin_room').emit('state_changed', state);
+    io.emit('global_state_update', state);
     res.json({ success: true, state });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server error' });

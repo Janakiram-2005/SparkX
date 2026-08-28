@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const FeedbackForm = ({ team }) => {
+const FeedbackForm = ({ team, onComplete }) => {
   const [rating, setRating] = useState(5);
   const [improvements, setImprovements] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -23,6 +23,9 @@ const FeedbackForm = ({ team }) => {
         <div className="login-card" style={{ textAlign: 'center' }}>
           <h2>Thank You!</h2>
           <p>Your feedback has been recorded.</p>
+          <button className="btn-primary-flow" onClick={onComplete} style={{ marginTop: '1rem' }}>
+            Continue to Waiting Room
+          </button>
         </div>
       </div>
     );
