@@ -440,12 +440,30 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
     let insertedCount = 0;
     const duplicates = [];
     
+    // Helper to find a key flexibly
+    const findKey = (row, ...keywords) => {
+      const keys = Object.keys(row);
+      for (const k of keys) {
+        const lowerK = k.toLowerCase().trim();
+        if (keywords.some(kw => lowerK.includes(kw))) return k;
+      }
+      return null;
+    };
+
     for (let i = 0; i < data.length; i++) {
       const row = data[i];
-      const teamName = row.TeamName || row.team_name || row['Team Name'] || row.Name || `Team ${i+1}`;
-      const officialTeamId = row.OfficialTeamId || row.officialTeamId || row['Official Team ID'] || row['Registration Number'] || '';
-      const aiId = String(row.AI_ID || row.ai_id || row['Login ID'] || row['VUCSE ID'] || i + 1);
-      const password = row.Password || row.password || `AIX${Math.floor(100 + Math.random() * 900)}`;
+      
+      const teamNameKey = findKey(row, 'team name', 'team nan');
+      const teamName = teamNameKey ? row[teamNameKey] : `Team ${i+1}`;
+      
+      const teamIdKey = findKey(row, 'team id', 'official team', 'registration number');
+      const officialTeamId = teamIdKey ? String(row[teamIdKey]) : '';
+      
+      const aiIdKey = findKey(row, 'leader ai', 'ai id', 'login id', 'vucse id');
+      const aiId = aiIdKey ? String(row[aiIdKey]).trim() : String(i + 1);
+      
+      const passKey = findKey(row, 'password');
+      const password = passKey ? String(row[passKey]).trim() : `AIX${Math.floor(100 + Math.random() * 900)}`;
 
       // Check if duplicate
       const existing = await Team.findOne({ 
@@ -460,27 +478,32 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
         continue;
       }
 
-      // Extract members if present in Excel (e.g., Member 1 Name, Member 1 Role, etc.)
+      // Extract members if present in Excel
       const members = [];
-      if (row.Name && !row['Member 1 Name']) {
+      const leaderNameKey = findKey(row, 'leader na', 'leader name');
+      const leaderRegKey = findKey(row, 'leader re', 'leader reg');
+      
+      if (leaderNameKey && row[leaderNameKey]) {
         members.push({
-          fullName: row.Name,
-          universityRegNo: row['Registration Number'] || '',
-          phone: row.Phone || '',
-          email: row.Email || '',
-          role: 'Participant'
+          fullName: row[leaderNameKey],
+          universityRegNo: leaderRegKey ? String(row[leaderRegKey]) : '',
+          agenticAiRegId: aiId,
+          role: 'Leader'
         });
-      } else {
-        for (let m = 1; m <= 3; m++) {
-          if (row[`Member ${m} Name`]) {
-            members.push({
-              fullName: row[`Member ${m} Name`],
-              agenticAiRegId: row[`Member ${m} AI ID`] || row[`Member ${m} Role`] || '',
-              universityRegNo: row[`Member ${m} RegNo`] || '',
-              email: row[`Member ${m} Email`] || '',
-              phone: row[`Member ${m} Phone`] || ''
-            });
-          }
+      }
+
+      for (let m = 2; m <= 5; m++) {
+        const mNameKey = findKey(row, `member ${m} n`, `member ${m} name`);
+        const mRegKey = findKey(row, `member ${m} r`, `member ${m} reg`);
+        const mAiKey = findKey(row, `member ${m} a`, `member ${m} ai`);
+        
+        if (mNameKey && row[mNameKey]) {
+          members.push({
+            fullName: row[mNameKey],
+            universityRegNo: mRegKey ? String(row[mRegKey]) : '',
+            agenticAiRegId: mAiKey ? String(row[mAiKey]) : '',
+            role: 'Participant'
+          });
         }
       }
 
@@ -504,6 +527,10 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
     }
 
     res.json({ success: true, message: `Successfully processed ${insertedCount} teams.`, duplicates });
+    // Broadcast update to all admins
+    if (insertedCount > 0) {
+      io.to('admin_room').emit('team_update');
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ success: false, message: 'Error processing Excel file' });
