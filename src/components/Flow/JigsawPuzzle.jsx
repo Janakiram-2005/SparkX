@@ -104,7 +104,6 @@ const JigsawPuzzle = ({ team, onComplete }) => {
     });
 
     newSocket.on('disqualified', () => {
-      alert("CRITICAL VIOLATION: YOUR TEAM HAS BEEN DISQUALIFIED FOR TAB SWITCHING.");
       localStorage.removeItem('sparkx_session');
       window.location.href = '/login';
     });

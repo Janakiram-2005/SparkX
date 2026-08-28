@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Routes, Route, useNavigate, Navigate, useLocation } from 'react-router-dom';
-import io from 'socket.io-client';
 import IntroAnimation from './components/IntroAnimation';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminLogin from './components/Admin/AdminLogin';
@@ -70,22 +69,6 @@ function App() {
     };
     verifySession();
   }, []);
-
-  // Global socket listener for single active session enforcement
-  useEffect(() => {
-    if (team && !isVerifying) {
-      const globalSocket = io(import.meta.env.PROD ? undefined : 'http://localhost:5000');
-      globalSocket.emit('join_team', team.id || team._id);
-
-      globalSocket.on('force_logout', () => {
-        alert("Session Ended: Your team has logged in from another device.");
-        localStorage.removeItem('sparkx_session');
-        window.location.href = '/login';
-      });
-
-      return () => globalSocket.disconnect();
-    }
-  }, [team, isVerifying]);
 
   useEffect(() => {
     if (location.hash === '##') {

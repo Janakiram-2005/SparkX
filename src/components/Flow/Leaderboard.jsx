@@ -24,7 +24,9 @@ const Leaderboard = () => {
     const newSocket = io(import.meta.env.PROD ? undefined : 'http://localhost:5000');
     setSocket(newSocket);
     newSocket.emit('join_leaderboard');
-    newSocket.on('refresh_leaderboard', () => fetchLeaderboard());
+    newSocket.on('team_update', () => fetchLeaderboard());
+    newSocket.on('team_completed', () => fetchLeaderboard());
+    newSocket.on('all_teams_reset', () => fetchLeaderboard());
     return () => newSocket.disconnect();
   }, []);
 
