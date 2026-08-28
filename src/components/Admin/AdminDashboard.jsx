@@ -24,7 +24,7 @@ const AdminDashboard = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    const newSocket = io(import.meta.env.PROD ? undefined : 'http://localhost:5000');
+    const newSocket = io(import.meta.env.PROD ? '/sparkx' : 'http://localhost:5000', { path: '/sparkx/socket.io' });
     setSocket(newSocket);
 
     newSocket.emit('join_admin');

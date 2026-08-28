@@ -18,7 +18,7 @@ const RoundTwo = ({ team }) => {
       
     setPuzzleData(DEFAULT_DATABASE[assignedIdx]);
 
-    const newSocket = io(import.meta.env.PROD ? undefined : 'http://localhost:5000');
+    const newSocket = io(import.meta.env.PROD ? '/sparkx' : 'http://localhost:5000', { path: '/sparkx/socket.io' });
     setSocket(newSocket);
     newSocket.emit('join_team', team.id || team._id);
 

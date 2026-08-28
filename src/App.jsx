@@ -129,11 +129,7 @@ function App() {
         } />
 
         <Route path="/puzzle" element={
-          team ? <JigsawPuzzle team={team} onComplete={() => navigate('/results')} /> : <Navigate to="/login" replace />
-        } />
-
-        <Route path="/results" element={
-          team ? <ResultsReveal team={team} onNext={() => navigate('/feedback')} /> : <Navigate to="/login" replace />
+          team ? <JigsawPuzzle team={team} onComplete={() => navigate('/feedback')} /> : <Navigate to="/login" replace />
         } />
 
         <Route path="/feedback" element={

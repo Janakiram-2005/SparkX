@@ -16,7 +16,7 @@ const WaitingRoom = ({ team, onRoundStart }) => {
       });
 
     // Connect to websocket
-    const newSocket = io(import.meta.env.PROD ? undefined : 'http://localhost:5000');
+    const newSocket = io(import.meta.env.PROD ? '/sparkx' : 'http://localhost:5000', { path: '/sparkx/socket.io' });
     setSocket(newSocket);
     
     newSocket.emit('join_team', team.id);
