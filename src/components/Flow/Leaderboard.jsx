@@ -9,7 +9,7 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      const res = await fetch(`${import.meta.env.PROD ? '/sparkx' : 'http://localhost:6012'}/api/leaderboard`);
+      const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/leaderboard`);
       const data = await res.json();
       if (data.success) {
         setTeams(data.teams);
@@ -21,7 +21,7 @@ const Leaderboard = () => {
 
   useEffect(() => {
     fetchLeaderboard();
-    const newSocket = io(import.meta.env.PROD ? { path: '/sparkx/socket.io' } : 'http://localhost:6012');
+    const newSocket = io(import.meta.env.PROD ? undefined : 'http://localhost:5000');
     setSocket(newSocket);
     newSocket.emit('join_leaderboard');
     newSocket.on('team_update', () => fetchLeaderboard());

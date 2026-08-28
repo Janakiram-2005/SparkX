@@ -10,7 +10,7 @@ const RoundInstructions = ({ team, onStartExam }) => {
   useEffect(() => {
     const fetchState = async () => {
       try {
-        const res = await fetch(`${import.meta.env.PROD ? '/sparkx' : 'http://localhost:6012'}/api/admin/state`);
+        const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/state`);
         const data = await res.json();
         if (data.success && data.state) {
           setIsRoundActive(Boolean(data.state.round1_active));

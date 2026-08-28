@@ -34,7 +34,7 @@ export default async function generateAIAgenticImage(teamIdStr, puzzleData = nul
   // Fetch the actual number of puzzle images available in the public/puzzles/images directory
   let imageCount = 10;
   try {
-    const res = await fetch(`${import.meta.env.PROD ? '/sparkx' : 'http://localhost:6012'}/api/system/image-count`);
+    const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/system/image-count`);
     const data = await res.json();
     if (data && data.count > 0) {
       imageCount = data.count;

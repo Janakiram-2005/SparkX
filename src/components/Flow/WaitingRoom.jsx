@@ -7,7 +7,7 @@ const WaitingRoom = ({ team, onRoundStart }) => {
 
   useEffect(() => {
     // Check initial state
-    fetch(`${import.meta.env.PROD ? '/sparkx' : 'http://localhost:6012'}/api/admin/state`)
+    fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/admin/state`)
       .then(res => res.json())
       .then(data => {
         if (data.success && data.state && data.state.round1_active) {
@@ -16,7 +16,7 @@ const WaitingRoom = ({ team, onRoundStart }) => {
       });
 
     // Connect to websocket
-    const newSocket = io(import.meta.env.PROD ? { path: '/sparkx/socket.io' } : 'http://localhost:6012');
+    const newSocket = io(import.meta.env.PROD ? undefined : 'http://localhost:5000');
     setSocket(newSocket);
     
     newSocket.emit('join_team', team.id);
