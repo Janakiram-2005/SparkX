@@ -29,10 +29,21 @@ const upload = multer({ storage: multer.memoryStorage() });
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
+  path: '/sparkx/socket.io',
   cors: {
     origin: '*',
     methods: ['GET', 'POST']
   }
+});
+
+// Middleware to normalize /sparkx prefix for all routes and static assets
+app.use((req, res, next) => {
+  if (req.url.startsWith('/sparkx/api')) {
+    req.url = req.url.replace('/sparkx', '');
+  } else if (req.url === '/sparkx' || req.url === '/sparkx/') {
+    req.url = '/';
+  }
+  next();
 });
 
 app.use(cors());
@@ -1079,8 +1090,11 @@ io.on('connection', (socket) => {
   });
 });
 
-// Serve frontend static files
+// Serve frontend static files & assets
+app.use('/sparkx', express.static(path.join(__dirname, 'dist')));
 app.use(express.static(path.join(__dirname, 'dist')));
+app.use('/public', express.static(path.join(__dirname, 'public')));
+app.use('/sparkx/public', express.static(path.join(__dirname, 'public')));
 
 app.get(/(.*)/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
