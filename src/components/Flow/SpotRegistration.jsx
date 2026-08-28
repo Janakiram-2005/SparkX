@@ -156,7 +156,7 @@ const SpotRegistration = () => {
 
   if (successData) {
     return (
-      <div className="stitch-layout" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+      <div className="stitch-layout" style={{ minHeight: '100vh', height: 'auto', overflowY: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
         <div className="stitch-bg"></div>
         <div style={{ background: 'rgba(15,23,42,0.8)', padding: '3rem', borderRadius: '24px', border: '1px solid rgba(34,197,94,0.5)', maxWidth: '500px', width: '100%', textAlign: 'center', position: 'relative', zIndex: 10, backdropFilter: 'blur(10px)' }}>
           <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✅</div>
@@ -190,7 +190,7 @@ const SpotRegistration = () => {
   }
 
   return (
-    <div className="stitch-layout" style={{ minHeight: '100vh', padding: '2rem 1rem' }}>
+    <div className="stitch-layout" style={{ minHeight: '100vh', height: 'auto', overflowY: 'auto', padding: '2rem 1rem' }}>
       <div className="stitch-bg"></div>
       
       <div style={{ maxWidth: '600px', margin: '0 auto', position: 'relative', zIndex: 10 }}>
