@@ -99,7 +99,7 @@ function App() {
         } />
 
         <Route path="/leaderboard" element={<Leaderboard />} />
-        <Route path="/spot-registration" element={<SpotRegistration />} />
+        <Route path="/spot" element={<SpotRegistration />} />
 
         <Route path="/login" element={
           <Login onLoginSuccess={(t, isRound2) => {
