@@ -86,9 +86,24 @@ app.get('/api/health', (req, res) => {
 
 // Auth Route: Login Team
 app.post('/api/auth/login', async (req, res) => {
-  const { ai_id, password } = req.body;
+  let { ai_id, password } = req.body;
+  
+  if (!ai_id || !password) {
+    return res.status(401).json({ success: false, message: 'Missing credentials' });
+  }
+
+  ai_id = ai_id.trim();
+  password = password.trim();
+
   try {
-    const team = await Team.findOne({ ai_id, password }).select('_id team_name ai_id status disqualified qualifiedForRound2 assignedPuzzleIndex officialTeamId sessionToken');
+    const team = await Team.findOne({ 
+      $or: [
+        { ai_id: { $regex: new RegExp(`^${ai_id}$`, 'i') } },
+        { officialTeamId: { $regex: new RegExp(`^${ai_id}$`, 'i') } }
+      ],
+      password: password 
+    }).select('_id team_name ai_id status disqualified qualifiedForRound2 assignedPuzzleIndex officialTeamId sessionToken');
+    
     if (team) {
       if (team.disqualified) {
         return res.json({ success: false, message: 'Your team has been disqualified.' });
