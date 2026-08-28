@@ -62,7 +62,7 @@ const IntroAnimation = ({ onComplete }) => {
       {/* Visual Unmute Hint */}
       <div style={styles.unmuteHint}>
         <i className="fa-solid fa-volume-xmark" style={{ marginRight: '8px' }}></i> 
-        CLICK ANYWHERE TO UNMUTE AUDIO
+        CLICK ANYWHERE TO PLAY SOUND
       </div>
     </div>
   );
