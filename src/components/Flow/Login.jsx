@@ -6,8 +6,8 @@ const Login = ({ onLoginSuccess }) => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
+  const handleLogin = async (e, force = false) => {
+    if (e) e.preventDefault();
     setError('');
     
     try {
@@ -19,9 +19,16 @@ const Login = ({ onLoginSuccess }) => {
       const res = await fetch(`${import.meta.env.PROD ? '' : 'http://localhost:5000'}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ai_id: aiId, password })
+        body: JSON.stringify({ ai_id: aiId, password, force })
       });
       const data = await res.json();
+      
+      if (data.requiresConfirmation) {
+        if (window.confirm(data.message)) {
+          handleLogin(null, true);
+        }
+        return;
+      }
       
       if (data.success) {
         if (data.team.disqualified) {

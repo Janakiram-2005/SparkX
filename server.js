@@ -86,12 +86,21 @@ app.get('/api/health', (req, res) => {
 
 // Auth Route: Login Team
 app.post('/api/auth/login', async (req, res) => {
-  const { ai_id, password } = req.body;
+  const { ai_id, password, force } = req.body;
   try {
-    const team = await Team.findOne({ ai_id, password }).select('_id team_name ai_id status disqualified qualifiedForRound2 assignedPuzzleIndex officialTeamId');
+    const team = await Team.findOne({ ai_id, password }).select('_id team_name ai_id status disqualified qualifiedForRound2 assignedPuzzleIndex officialTeamId sessionToken');
     if (team) {
       if (team.disqualified) {
         return res.json({ success: false, message: 'Your team has been disqualified.' });
+      }
+
+      // Check for active session
+      if (team.sessionToken && !force) {
+        return res.json({ 
+          success: false, 
+          requiresConfirmation: true, 
+          message: 'You are already logged in on another device. Do you want to continue the session in this system? This will log out the other device.' 
+        });
       }
 
       const state = await SystemState.findOne();
@@ -99,6 +108,11 @@ app.post('/api/auth/login', async (req, res) => {
 
       if (isRound2Active && !team.qualifiedForRound2) {
         return res.json({ success: false, message: 'You are not qualified for Round 2.' });
+      }
+
+      // If forcing login, tell old session to log out
+      if (force && team.sessionToken) {
+        io.to(`team_${team._id}`).emit('force_logout');
       }
 
       // Generate session token
