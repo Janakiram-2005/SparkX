@@ -160,6 +160,36 @@ const AdminDashboard = () => {
     }
   };
 
+  const syncGoogleSheet = async () => {
+    const defaultUrl = "https://docs.google.com/spreadsheets/d/1B40eq5EIED5jxflUL78PrA50VjRgBoGknlFSzW5JWrk/export?format=csv&gid=2045460177";
+    const url = prompt("Verify the Google Sheet CSV URL (Make sure the sheet is shared as 'Anyone with the link can view'):", defaultUrl);
+    if (!url) return;
+    
+    try {
+      setIsUploading(true);
+      const formData = new FormData();
+      formData.append('sheetUrl', url);
+      formData.append('securityKey', localStorage.getItem('adminKey'));
+      
+      const res = await fetch(`${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012'}/api/admin/teams/sync-sheet`, {
+        method: 'POST',
+        body: formData
+      });
+      
+      const data = await res.json();
+      if (data.success) {
+        alert(data.message);
+        fetchTeams();
+      } else {
+        alert(data.message || 'Error syncing from Google Sheet.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network error while syncing.');
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   const seedData = async () => {
     if(!window.confirm('Seed database with temporary teams?')) return;
@@ -468,6 +498,13 @@ const AdminDashboard = () => {
               Download Template
             </button>
             
+            <button onClick={syncGoogleSheet} className="sidebar-btn btn-accent" disabled={isUploading} style={{background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.3)', marginTop: '0.5rem'}}>
+              <div style={{ position: 'relative', zIndex: 2, display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <i className={`fa-brands ${isUploading ? 'fa-spinner fa-spin' : 'fa-google'}`}></i>
+                {isUploading ? 'Syncing...' : 'Sync Google Form'}
+              </div>
+            </button>
+            
             <button onClick={seedData} className="sidebar-btn">
               <i className="fa-solid fa-database"></i>
               Seed DB
@@ -531,6 +568,10 @@ const AdminDashboard = () => {
             <button onClick={() => window.location.href = `${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012'}/api/admin/teams/export-eval`} className="sidebar-btn">
               <i className="fa-solid fa-file-csv"></i>
               Export Eval Sheet
+            </button>
+            <button onClick={() => window.location.href = `${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012'}/api/admin/teams/export-credentials`} className="sidebar-btn" style={{background: 'rgba(234, 179, 8, 0.1)', color: '#eab308', border: '1px solid rgba(234, 179, 8, 0.3)'}}>
+              <i className="fa-solid fa-key"></i>
+              Export Credentials
             </button>
             <button onClick={() => window.location.href = `${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012'}/api/admin/teams/export-qualified`} className="sidebar-btn" style={{background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.5)'}}>
               <i className="fa-solid fa-users"></i>

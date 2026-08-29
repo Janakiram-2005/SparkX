@@ -554,6 +554,137 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
   }
 });
 
+// Admin Route: Sync Google Sheet
+app.post('/api/admin/teams/sync-sheet', upload.none(), async (req, res) => {
+  try {
+    const { sheetUrl, securityKey } = req.body;
+    if (securityKey !== process.env.ADMIN_SECRET_KEY) {
+      return res.status(401).json({ success: false, message: 'Invalid Admin Key' });
+    }
+
+    if (!sheetUrl || !sheetUrl.startsWith('http')) {
+      return res.status(400).json({ success: false, message: 'Invalid URL provided.' });
+    }
+
+    const response = await fetch(sheetUrl);
+    if (!response.ok) {
+      return res.status(400).json({ success: false, message: 'Failed to fetch the CSV from the provided URL.' });
+    }
+
+    const buffer = Buffer.from(await response.arrayBuffer());
+    const workbook = xlsx.read(buffer, { type: 'buffer' });
+    const sheetName = workbook.SheetNames[0];
+    const data = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    let insertedCount = 0;
+    const duplicates = [];
+    
+    const findKey = (row, ...keywords) => {
+      const keys = Object.keys(row);
+      for (const k of keys) {
+        const lowerK = k.toLowerCase().trim();
+        if (keywords.some(kw => lowerK.includes(kw))) return k;
+      }
+      return null;
+    };
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i];
+      
+      const teamNameKey = findKey(row, 'team name', 'team nan', 'group name');
+      const teamName = teamNameKey && row[teamNameKey] ? String(row[teamNameKey]).trim() : `Team ${Math.floor(Math.random()*1000)}`;
+      
+      const phoneKey = findKey(row, 'phone', 'mobile', 'contact');
+      let phone = phoneKey && row[phoneKey] ? String(row[phoneKey]).trim().replace(/\\D/g, '') : '';
+      if(phone.length > 10) phone = phone.substring(phone.length - 10);
+      
+      const emailKey = findKey(row, 'email', 'mail');
+      const email = emailKey && row[emailKey] ? String(row[emailKey]).trim() : '';
+      
+      // Check if duplicate based on email or phone
+      let isDuplicate = false;
+      if (email || phone) {
+        const orClauses = [];
+        if (email) orClauses.push({ 'members.email': email });
+        if (phone) orClauses.push({ 'members.phone': phone });
+        
+        const existing = await Team.findOne({ $or: orClauses });
+        if (existing) isDuplicate = true;
+      }
+
+      if (isDuplicate) {
+        duplicates.push({ teamName, email, reason: 'Duplicate Email/Phone' });
+        continue;
+      }
+
+      const leaderAiKey = findKey(row, 'leader ai', 'ai id');
+      let aiId = leaderAiKey && row[leaderAiKey] ? String(row[leaderAiKey]).trim() : '';
+      
+      if (!aiId) {
+        // Auto-generated Login ID
+        const existingCount = await Team.countDocuments();
+        aiId = String(101 + existingCount + insertedCount); 
+      }
+
+      const members = [];
+      const leaderNameKey = findKey(row, 'leader na', 'leader name', 'name', 'full name');
+      const leaderRegKey = findKey(row, 'leader re', 'leader reg', 'university reg', 'reg no', 'registration');
+      
+      if (leaderNameKey && row[leaderNameKey]) {
+        members.push({
+          fullName: row[leaderNameKey],
+          universityRegNo: leaderRegKey ? String(row[leaderRegKey]) : '',
+          email: email,
+          phone: phone,
+          agenticAiRegId: aiId,
+          role: 'Leader'
+        });
+      }
+
+      for (let m = 2; m <= 3; m++) {
+        const mNameKey = findKey(row, `member ${m} name`, `member ${m} na`);
+        const mRegKey = findKey(row, `member ${m} reg`, `member ${m} university reg`);
+        const mAiKey = findKey(row, `member ${m} ai`, `member ${m} ai id`);
+        
+        if (mNameKey && row[mNameKey]) {
+          members.push({
+            fullName: String(row[mNameKey]).trim(),
+            universityRegNo: mRegKey && row[mRegKey] ? String(row[mRegKey]).trim() : '',
+            agenticAiRegId: mAiKey && row[mAiKey] ? String(row[mAiKey]).trim() : '',
+            role: 'Participant'
+          });
+        }
+      }
+
+      const assignedIdx = Math.floor(Math.random() * DEFAULT_DATABASE.length);
+      const puzzleBase = DEFAULT_DATABASE[assignedIdx];
+
+      const newTeam = new Team({
+        team_name: teamName,
+        ai_id: aiId,
+        password: phone || `AIX${Math.floor(100 + Math.random() * 900)}`,
+        eventName: row.EventName || row.eventName || 'Google Form Sync',
+        members: members,
+        assignedPuzzleIndex: assignedIdx,
+        puzzle: puzzleBase.puzzle,
+        problemStatement: puzzleBase.problemStatement,
+        registration_type: 'SYNC'
+      });
+
+      await newTeam.save();
+      insertedCount++;
+    }
+
+    res.json({ success: true, message: `Successfully synced ${insertedCount} new teams.`, duplicates });
+    if (insertedCount > 0) {
+      io.to('admin_room').emit('team_update');
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Error syncing from Google Sheet.' });
+  }
+});
+
 // Admin Route: Export Teams to PDF/Printable HTML
 app.get('/api/admin/teams/export', async (req, res) => {
   try {
@@ -676,6 +807,42 @@ app.get('/api/admin/teams/export-eval', async (req, res) => {
     const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
     
     res.setHeader('Content-Disposition', 'attachment; filename="AI_SparkX_Eval_Sheet.xlsx"');
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.send(buffer);
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Export failed' });
+  }
+});
+
+// Admin Route: Export Credentials (Excel)
+app.get('/api/admin/teams/export-credentials', async (req, res) => {
+  try {
+    const teams = await Team.find().lean().sort({ team_name: 1 });
+    
+    const exportData = [
+      ['Team Name', 'AI Login ID', 'Password', 'Members (Name - Reg No)']
+    ];
+
+    teams.forEach((t) => {
+      exportData.push([
+        t.team_name || '',
+        t.ai_id || '',
+        t.password || '',
+        t.members && t.members.length > 0 ? t.members.map(m => `${m.fullName} (${m.universityRegNo || 'N/A'})`).join(', ') : ''
+      ]);
+    });
+
+    const ws = xlsx.utils.aoa_to_sheet(exportData);
+    
+    // Auto-size columns
+    ws['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 60 }];
+
+    const wb = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(wb, ws, "Credentials");
+
+    const buffer = xlsx.write(wb, { type: 'buffer', bookType: 'xlsx' });
+
+    res.setHeader('Content-Disposition', 'attachment; filename="AI_SparkX_Credentials.xlsx"');
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     res.send(buffer);
   } catch (error) {
