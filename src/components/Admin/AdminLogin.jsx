@@ -9,7 +9,7 @@ const AdminLogin = ({ onAuthSuccess }) => {
     setError('');
 
     try {
-      const res = await fetch(`${import.meta.env.PROD ? '/sparkx' : 'http://localhost:6012'}/api/admin/auth`, {
+      const res = await fetch(`${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012'}/api/admin/auth`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ securityKey })
