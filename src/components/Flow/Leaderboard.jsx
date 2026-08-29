@@ -24,9 +24,7 @@ const Leaderboard = () => {
     const newSocket = io(import.meta.env.PROD ? '/sparkx' : 'http://localhost:6012', { path: '/sparkx/socket.io' });
     setSocket(newSocket);
     newSocket.emit('join_leaderboard');
-    newSocket.on('team_update', () => fetchLeaderboard());
-    newSocket.on('team_completed', () => fetchLeaderboard());
-    newSocket.on('all_teams_reset', () => fetchLeaderboard());
+    newSocket.on('refresh_leaderboard', () => fetchLeaderboard());
     return () => newSocket.disconnect();
   }, []);
 

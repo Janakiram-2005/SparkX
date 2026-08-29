@@ -372,7 +372,7 @@ const JigsawPuzzle = ({ team, onComplete }) => {
         <div className="anti-cheat-overlay victory-modal" style={{ background: 'rgba(0, 0, 0, 0.9)', zIndex: 90 }}>
           <div className="glass-panel" style={{ padding: '3rem', borderRadius: '16px', maxWidth: '800px', textAlign: 'center', border: '2px solid var(--stitch-primary)', boxShadow: '0 0 40px rgba(0, 243, 255, 0.3)' }}>
             <h1 style={{ color: 'var(--stitch-primary)', fontSize: '3rem', margin: '0 0 1rem 0', textShadow: '0 0 15px rgba(0, 243, 255, 0.8)' }}>COMPLETED SUCCESSFULLY!</h1>
-            <p style={{ fontSize: '1.2rem', color: '#cbd5e1', marginBottom: '2rem' }}>Congratulations Team {team.id || team._id}! You have successfully completed the Round 1 challenge.</p>
+            <p style={{ fontSize: '1.2rem', color: '#cbd5e1', marginBottom: '2rem' }}>Congratulations Team {team.team_name}! You have successfully completed the Round 1 challenge.</p>
             
             <div className="problem-statement-box" style={{ background: 'rgba(0,0,0,0.6)', padding: '2rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', marginBottom: '2.5rem', display: 'flex', justifyContent: 'space-around' }}>
               <div>
@@ -398,7 +398,7 @@ const JigsawPuzzle = ({ team, onComplete }) => {
           <h1 className="header-title">AI SPARKX • TEAM</h1>
           <div className="team-badge">
             <span className="material-symbols-outlined" style={{ fontSize: '1rem' }}>group</span>
-            <span>TEAM #{team.id || 'BETA'}</span>
+            <span>TEAM {team.team_name ? team.team_name.toUpperCase() : 'BETA'}</span>
           </div>
         </div>
         <div className="header-right">
