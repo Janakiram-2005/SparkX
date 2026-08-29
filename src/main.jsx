@@ -6,7 +6,7 @@ import '../style.css'; // Keep the original styling for now
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
-    <BrowserRouter basename={import.meta.env.PROD ? '/sparkx' : '/'}>
+    <BrowserRouter basename="/sparkx">
       <App />
     </BrowserRouter>
   </React.StrictMode>
