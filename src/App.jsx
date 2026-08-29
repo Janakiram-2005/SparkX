@@ -57,9 +57,9 @@ function App() {
           const data = await res.json();
           if (data.success && !data.team.disqualified) {
             setTeam(data.team);
-            if (data.isRound2 && window.location.pathname !== '/round2' && window.location.pathname !== '/adminsparkx1') {
+            if (data.isRound2 && location.pathname !== '/round2' && location.pathname !== '/adminsparkx1') {
               navigate('/round2');
-            } else if (data.team.status === 'completed' && window.location.pathname !== '/waiting' && window.location.pathname !== '/adminsparkx1') {
+            } else if (data.team.status === 'completed' && location.pathname !== '/waiting' && location.pathname !== '/adminsparkx1') {
               navigate('/waiting');
             }
           } else {
