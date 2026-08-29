@@ -13,12 +13,14 @@ const JigsawPuzzle = ({ team, onComplete }) => {
   const [trayPieces, setTrayPieces] = useState([]);
   const [selectedPiece, setSelectedPiece] = useState(null);
   const [matchedCount, setMatchedCount] = useState(0);
+  const matchedCountRef = useRef(0);
   
   // Game State
   const [puzzleData, setPuzzleData] = useState(null);
   const [phase, setPhase] = useState('locked'); // 'locked' -> 'playing' -> 'ended'
   const [timeLeft, setTimeLeft] = useState(60); // 60s unlock, then 600s play
   const [points, setPoints] = useState(1000);
+  const pointsRef = useRef(1000);
   const [showWarning, setShowWarning] = useState(false);
   const [warningText, setWarningText] = useState('');
   const [isFullscreen, setIsFullscreen] = useState(true);
@@ -191,7 +193,11 @@ const JigsawPuzzle = ({ team, onComplete }) => {
 
         // Point decay
         if (phase === 'playing') {
-          setPoints(p => Math.max(0, p - 1));
+          setPoints(p => {
+            const newP = Math.max(0, p - 1);
+            pointsRef.current = newP;
+            return newP;
+          });
         }
 
         return prev - 1;
@@ -208,6 +214,7 @@ const JigsawPuzzle = ({ team, onComplete }) => {
       if (p && p.id === idx) matched++;
     });
     setMatchedCount(matched);
+    matchedCountRef.current = matched;
     
     if (socket) {
       socket.emit('puzzle_update', { teamId: team.id, progress: Math.round((matched / 36) * 100) });
@@ -230,7 +237,7 @@ const JigsawPuzzle = ({ team, onComplete }) => {
 
   const handleTimeUp = () => {
     setPhase('ended');
-    const finalScore = Math.floor(points * (matchedCount / 36));
+    const finalScore = Math.floor(pointsRef.current * (matchedCountRef.current / 36));
     setPoints(finalScore);
     
     if (socket) socket.emit('puzzle_complete', { teamId: team.id, score: finalScore });
