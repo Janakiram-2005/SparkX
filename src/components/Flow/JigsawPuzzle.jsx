@@ -44,7 +44,7 @@ const JigsawPuzzle = ({ team, onComplete }) => {
     const assignedData = DEFAULT_DATABASE[assignedIdx].puzzle;
     setPuzzleData(assignedData);
 
-    const newSocket = io(import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012', { path: '/sparkx/socket.io' });
+    const newSocket = io(import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:5000', { path: '/sparkx/socket.io' });
     setSocket(newSocket);
     newSocket.emit('join_team', team.id || team._id);
     

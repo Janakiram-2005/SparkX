@@ -90,7 +90,7 @@ const SpotRegistration = () => {
     setIsSubmitting(true);
     
     try {
-      const res = await fetch(`${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012'}/api/spot-registration`, {
+      const res = await fetch(`${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:5000'}/api/spot-registration`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -9,7 +9,7 @@ const Leaderboard = () => {
 
   const fetchLeaderboard = async () => {
     try {
-      const res = await fetch(`${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012'}/api/leaderboard`);
+      const res = await fetch(`${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:5000'}/api/leaderboard`);
       const data = await res.json();
       if (data.success) {
         setTeams(data.teams);
@@ -21,7 +21,7 @@ const Leaderboard = () => {
 
   useEffect(() => {
     fetchLeaderboard();
-    const newSocket = io(import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012', { path: '/sparkx/socket.io' });
+    const newSocket = io(import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:5000', { path: '/sparkx/socket.io' });
     setSocket(newSocket);
     newSocket.emit('join_leaderboard');
     newSocket.on('refresh_leaderboard', () => fetchLeaderboard());

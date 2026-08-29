@@ -12,7 +12,7 @@ const Login = ({ onLoginSuccess }) => {
     
     try {
 
-      const res = await fetch(`${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012'}/api/auth/login`, {
+      const res = await fetch(`${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:5000'}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ai_id: aiId.trim(), password: password.trim() })

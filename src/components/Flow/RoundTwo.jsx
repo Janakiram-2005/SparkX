@@ -18,7 +18,7 @@ const RoundTwo = ({ team }) => {
       
     setPuzzleData(DEFAULT_DATABASE[assignedIdx]);
 
-    const newSocket = io(import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012', { path: '/sparkx/socket.io' });
+    const newSocket = io(import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:5000', { path: '/sparkx/socket.io' });
     setSocket(newSocket);
     newSocket.emit('join_team', team.id || team._id);
 
@@ -28,7 +28,7 @@ const RoundTwo = ({ team }) => {
     });
 
     // Fetch initial state
-    fetch(`${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:6012'}/api/admin/state`)
+    fetch(`${import.meta.env.PROD ? 'https://vucse.app/sparkx' : 'http://localhost:5000'}/api/admin/state`)
       .then(res => res.json())
       .then(data => {
         if (data.success && data.state) {
