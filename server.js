@@ -307,7 +307,8 @@ app.post('/api/spot-registration', async (req, res) => {
     const spotCount = await Team.countDocuments({ registration_type: 'SPOT' });
     const formattedCount = String(spotCount + 1).padStart(4, '0');
     const officialTeamId = `AISX-2026-SPOT-${formattedCount}`;
-    const autoLoginId = `SPOT${formattedCount}`;
+    const totalCount = await Team.countDocuments();
+    const autoLoginId = String(101 + totalCount);
 
     // Auto-generate password (Use Member 1's Phone)
     const password = members[0].phone;
@@ -474,8 +475,8 @@ app.post('/api/admin/teams/upload', upload.single('file'), async (req, res) => {
       const aiIdKey = findKey(row, 'leader ai', 'ai id', 'login id', 'vucse id');
       let aiId = aiIdKey && row[aiIdKey] ? String(row[aiIdKey]).trim() : '';
       if (!aiId || aiId === '0' || aiId.toLowerCase() === 'undefined') {
-        const shortRand = Math.floor(1000 + Math.random() * 9000); // 4 digit random
-        aiId = `AIX${shortRand}${i}`; 
+        const existingCount = await Team.countDocuments();
+        aiId = String(101 + existingCount + i);
       }
       
       const passKey = findKey(row, 'password');
@@ -764,7 +765,7 @@ app.get('/api/admin/teams/export-qualified', async (req, res) => {
 // Admin Route: Export Problem Statement Allocation (HTML Print/PDF)
 app.get('/api/admin/teams/export-ps', async (req, res) => {
   try {
-    const teams = await Team.find().lean().sort({ team_name: 1 });
+    const teams = await Team.find({ qualifiedForRound2: true }).lean().sort({ team_name: 1 });
     
     // We need to fetch the database to map indexes
     let database = [];

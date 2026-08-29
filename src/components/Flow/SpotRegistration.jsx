@@ -27,11 +27,7 @@ const SpotRegistration = () => {
   };
 
   const addMember = () => {
-    if (!showMember2) {
-      setShowMember2(true);
-      setMembers([...members, { fullName: '', agenticAiRegId: '', universityRegNo: '', email: '', phone: '' }]);
-    } else if (!showMember3) {
-      setShowMember3(true);
+    if (members.length < 3) {
       setMembers([...members, { fullName: '', agenticAiRegId: '', universityRegNo: '', email: '', phone: '' }]);
     }
   };
@@ -57,6 +53,10 @@ const SpotRegistration = () => {
       const m = members[i];
       if (!m.fullName.trim() || !m.agenticAiRegId.trim() || !m.universityRegNo.trim() || !m.email.trim() || !m.phone.trim()) {
         return `All fields are required for Member ${i + 1}.`;
+      }
+      
+      if (!m.universityRegNo.trim() || m.universityRegNo.trim().length !== 10) {
+        return `University Reg No must be exactly 10 characters for Member ${i + 1}.`;
       }
       
       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -143,7 +143,7 @@ const SpotRegistration = () => {
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>University Registration No. *</label>
-            <input type="text" value={m.universityRegNo} onChange={e => handleMemberChange(index, 'universityRegNo', e.target.value)} placeholder="231FAXXXXX" style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
+            <input type="text" value={m.universityRegNo} onChange={e => handleMemberChange(index, 'universityRegNo', e.target.value.toUpperCase())} placeholder="231FAXXXXX" maxLength={10} style={{ width: '100%', padding: '0.75rem', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.2)', background: 'rgba(0,0,0,0.5)', color: '#fff', boxSizing: 'border-box' }} required />
           </div>
           <div>
             <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>Email *</label>
@@ -256,13 +256,11 @@ const SpotRegistration = () => {
           <div style={{ background: 'rgba(15,23,42,0.6)', padding: '2rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.1)', backdropFilter: 'blur(10px)' }}>
             <h2 style={{ marginTop: 0, marginBottom: '1.5rem', color: '#fff', fontSize: '1.4rem', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '0.5rem' }}>Team Member Details</h2>
             
-            {renderMemberForm(0)}
-            {showMember2 && renderMemberForm(1)}
-            {showMember3 && renderMemberForm(2)}
+            {members.map((_, i) => renderMemberForm(i))}
 
-            {!showMember3 && (
-              <button type="button" onClick={addMember} style={{ background: 'rgba(255,255,255,0.05)', border: '1px dashed rgba(255,255,255,0.2)', color: '#fff', padding: '1rem', borderRadius: '8px', width: '100%', cursor: 'pointer', transition: 'all 0.3s' }}>
-                + Add Member {showMember2 ? '3' : '2'}
+            {members.length < 3 && (
+              <button type="button" onClick={addMember} style={{ background: 'rgba(255,255,255,0.1)', border: '1px dashed rgba(255,255,255,0.3)', color: '#fff', padding: '1rem', borderRadius: '8px', cursor: 'pointer', marginTop: '1rem', transition: 'background 0.3s' }}>
+                + Add Member {members.length + 1}
               </button>
             )}
           </div>
